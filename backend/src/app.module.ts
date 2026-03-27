@@ -2,6 +2,8 @@ import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
+import { PositionsModule } from "./positions/positions.module";
+import { QuestionsModule } from "./questions/questions.module";
 
 @Module({
   imports: [
@@ -13,8 +15,10 @@ import { AppService } from "./app.service";
       password: process.env.POSTGRES_PASSWORD ?? "postgres",
       database: process.env.POSTGRES_DB ?? "intervene_app",
       autoLoadEntities: true,
-      synchronize: false
-    })
+      synchronize: true
+    }),
+    PositionsModule,
+    QuestionsModule
   ],
   controllers: [AppController],
   providers: [AppService]
