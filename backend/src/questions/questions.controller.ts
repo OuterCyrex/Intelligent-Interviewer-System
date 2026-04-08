@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Inject, Param, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, Query } from "@nestjs/common";
 import { CreateQuestionDto } from "./dto/create-question.dto";
 import { UpdateQuestionDto } from "./dto/update-question.dto";
 import { QuestionsService } from "./questions.service";
@@ -13,8 +13,18 @@ export class QuestionsController {
   }
 
   @Get("questions")
-  findAll() {
-    return this.questionsService.findAll();
+  findAll(
+    @Query("positionId") positionId?: string,
+    @Query("type") type?: string,
+    @Query("difficulty") difficulty?: string,
+    @Query("active") active?: string
+  ) {
+    return this.questionsService.findAll({
+      positionId,
+      type,
+      difficulty,
+      active
+    });
   }
 
   @Get("questions/:id")
