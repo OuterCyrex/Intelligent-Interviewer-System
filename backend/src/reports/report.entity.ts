@@ -51,6 +51,15 @@ export class InterviewReport {
   @Column({ name: "question_type_breakdown", type: "simple-json", nullable: true })
   questionTypeBreakdown!: Record<string, number> | null;
 
+  @Column({ name: "generation_source", type: "varchar", length: 32, default: "heuristic" })
+  generationSource!: "heuristic" | "llm";
+
+  @Column({ name: "llm_provider", type: "varchar", length: 64, nullable: true })
+  llmProvider!: string | null;
+
+  @Column({ name: "llm_model", type: "varchar", length: 120, nullable: true })
+  llmModel!: string | null;
+
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
 

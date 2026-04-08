@@ -1,6 +1,6 @@
 import type { ProcessedSpeechMetrics } from "../audio/audio.service";
 import type { InterviewSession } from "../interviews/interview.entity";
-import type { InterviewAudioMetrics, InterviewTurnScores } from "../interviews/interview-turn.entity";
+import type { InterviewAudioMetrics, InterviewTurn, InterviewTurnScores } from "../interviews/interview-turn.entity";
 import type { Position } from "../positions/position.entity";
 import type { Question } from "../questions/question.entity";
 
@@ -38,4 +38,46 @@ export interface InterviewEvaluationRequest {
     wordCount: number;
     metrics: ProcessedSpeechMetrics;
   } | null;
+}
+
+export interface ReportGenerationRequest {
+  interview: Pick<InterviewSession, "id" | "candidateName" | "difficulty" | "mode" | "targetQuestionCount"> & {
+    position: Pick<Position, "name" | "slug" | "highlights" | "evaluationDimensions">;
+  };
+  metrics: {
+    overallScore: number;
+    technicalScore: number;
+    communicationScore: number;
+    depthScore: number;
+    roleFitScore: number;
+    questionTypeBreakdown: Record<string, number>;
+    missedKeywords: string[];
+  };
+  turns: Array<
+    Pick<
+      InterviewTurn,
+      | "sequence"
+      | "kind"
+      | "questionType"
+      | "prompt"
+      | "answerText"
+      | "keywordHits"
+      | "missedKeywords"
+      | "evaluationSummary"
+      | "overallScore"
+    > & {
+      questionTopic: string | null;
+      dimensionScores: InterviewTurnScores | null;
+    }
+  >;
+}
+
+export interface ReportGenerationResult {
+  summary: string;
+  strengths: string[];
+  improvementAreas: string[];
+  nextSteps: string[];
+  generationSource: "llm" | "heuristic";
+  llmProvider: string | null;
+  llmModel: string | null;
 }
