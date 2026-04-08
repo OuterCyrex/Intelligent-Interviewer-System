@@ -5,6 +5,10 @@ export class CreateQuestionDto {
   type!: QuestionType;
   difficulty!: QuestionDifficulty;
   content!: string;
+  topic!: string;
   expectedKeywords!: string[];
+  followUpHints?: string[];
+  evaluationFocus?: string[];
   rubric?: string;
+  isActive?: boolean;
 }

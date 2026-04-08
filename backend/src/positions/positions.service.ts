@@ -31,7 +31,15 @@ export class PositionsService {
   create(createPositionDto: CreatePositionDto) {
     const position = this.positionsRepository.create({
       ...createPositionDto,
-      highlights: createPositionDto.highlights ?? []
+      highlights: createPositionDto.highlights ?? [],
+      evaluationDimensions: createPositionDto.evaluationDimensions ?? [
+        "technical correctness",
+        "knowledge depth",
+        "communication",
+        "role fit"
+      ],
+      defaultDifficulty: createPositionDto.defaultDifficulty ?? "intermediate",
+      defaultQuestionCount: createPositionDto.defaultQuestionCount ?? 4
     });
     return this.positionsRepository.save(position);
   }
@@ -41,6 +49,9 @@ export class PositionsService {
     Object.assign(position, updatePositionDto);
     if (updatePositionDto.highlights) {
       position.highlights = updatePositionDto.highlights;
+    }
+    if (updatePositionDto.evaluationDimensions) {
+      position.evaluationDimensions = updatePositionDto.evaluationDimensions;
     }
     return this.positionsRepository.save(position);
   }

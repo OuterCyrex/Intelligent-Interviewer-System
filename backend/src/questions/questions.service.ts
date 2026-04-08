@@ -1,9 +1,17 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { FindOptionsWhere, Repository } from "typeorm";
 import { CreateQuestionDto } from "./dto/create-question.dto";
 import { UpdateQuestionDto } from "./dto/update-question.dto";
 import { Question } from "./question.entity";
+import type { QuestionDifficulty, QuestionType } from "./question.entity";
+
+interface QuestionFilters {
+  positionId?: string;
+  type?: string;
+  difficulty?: string;
+  active?: string;
+}
 
 @Injectable()
 export class QuestionsService {
@@ -12,8 +20,24 @@ export class QuestionsService {
     private readonly questionsRepository: Repository<Question>
   ) {}
 
-  findAll() {
+  findAll(filters: QuestionFilters = {}) {
+    const where: FindOptionsWhere<Question> = {};
+
+    if (filters.positionId) {
+      where.positionId = filters.positionId;
+    }
+    if (filters.type) {
+      where.type = filters.type as QuestionType;
+    }
+    if (filters.difficulty) {
+      where.difficulty = filters.difficulty as QuestionDifficulty;
+    }
+    if (filters.active !== undefined) {
+      where.isActive = filters.active !== "false";
+    }
+
     return this.questionsRepository.find({
+      where,
       relations: {
         position: true
       },
@@ -48,7 +72,11 @@ export class QuestionsService {
   create(createQuestionDto: CreateQuestionDto) {
     const question = this.questionsRepository.create({
       ...createQuestionDto,
+      topic: createQuestionDto.topic,
       expectedKeywords: createQuestionDto.expectedKeywords ?? [],
+      followUpHints: createQuestionDto.followUpHints ?? [],
+      evaluationFocus: createQuestionDto.evaluationFocus ?? [],
+      isActive: createQuestionDto.isActive ?? true,
       rubric: createQuestionDto.rubric ?? null
     });
     return this.questionsRepository.save(question);
@@ -59,6 +87,12 @@ export class QuestionsService {
     Object.assign(question, updateQuestionDto);
     if (updateQuestionDto.expectedKeywords) {
       question.expectedKeywords = updateQuestionDto.expectedKeywords;
+    }
+    if (updateQuestionDto.followUpHints) {
+      question.followUpHints = updateQuestionDto.followUpHints;
+    }
+    if (updateQuestionDto.evaluationFocus) {
+      question.evaluationFocus = updateQuestionDto.evaluationFocus;
     }
     if (Object.prototype.hasOwnProperty.call(updateQuestionDto, "rubric")) {
       question.rubric = updateQuestionDto.rubric ?? null;

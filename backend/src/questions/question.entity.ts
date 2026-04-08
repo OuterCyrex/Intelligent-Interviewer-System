@@ -33,11 +33,23 @@ export class Question {
   @Column({ type: "text" })
   content!: string;
 
+  @Column({ type: "varchar", length: 120 })
+  topic!: string;
+
   @Column({ type: "simple-array", default: "" })
   expectedKeywords!: string[];
 
+  @Column({ name: "follow_up_hints", type: "simple-array", default: "" })
+  followUpHints!: string[];
+
+  @Column({ name: "evaluation_focus", type: "simple-array", default: "" })
+  evaluationFocus!: string[];
+
   @Column({ type: "text", nullable: true })
   rubric!: string | null;
+
+  @Column({ name: "is_active", type: "boolean", default: true })
+  isActive!: boolean;
 
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
