@@ -211,9 +211,24 @@ export class MvpSeedService implements OnApplicationBootstrap {
   ) {}
 
   async onApplicationBootstrap() {
-    const positionMap = await this.seedPositions();
-    await this.seedQuestions(positionMap);
-    await this.seedKnowledge(positionMap);
+    const enabled = (process.env.MVP_SEED ?? "true").toLowerCase() === "true";
+    if (!enabled) {
+      return;
+    }
+
+    // Do not block application startup on seed execution.
+    void this.seedAll();
+  }
+
+  private async seedAll() {
+    try {
+      const positionMap = await this.seedPositions();
+      await this.seedQuestions(positionMap);
+      await this.seedKnowledge(positionMap);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(`MVP seed failed: ${message}`);
+    }
   }
 
   private async seedPositions() {

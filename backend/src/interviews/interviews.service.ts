@@ -1,4 +1,5 @@
 import {
+  Inject,
   BadRequestException,
   Injectable,
   NotFoundException
@@ -36,12 +37,24 @@ export class InterviewsService {
     @InjectRepository(Question)
     private readonly questionsRepository: Repository<Question>,
     private readonly interviewIntelligenceService: InterviewIntelligenceService,
+    @Inject(ReportsService)
     private readonly reportsService: ReportsService
   ) {}
 
   async create(createInterviewDto: CreateInterviewDto) {
-    const positionId = createInterviewDto.positionId?.trim();
-    const candidateName = createInterviewDto.candidateName?.trim();
+    if (typeof createInterviewDto.positionId !== "string") {
+      throw new BadRequestException("positionId must be a string.");
+    }
+    if (typeof createInterviewDto.candidateName !== "string") {
+      throw new BadRequestException("candidateName must be a string.");
+    }
+
+    const positionId =
+      typeof createInterviewDto.positionId === "string" ? createInterviewDto.positionId.trim() : "";
+    const candidateName =
+      typeof createInterviewDto.candidateName === "string"
+        ? createInterviewDto.candidateName.trim()
+        : "";
 
     if (!positionId) {
       throw new BadRequestException("positionId is required.");
