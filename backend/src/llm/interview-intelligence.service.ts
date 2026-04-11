@@ -5,6 +5,7 @@ import { InterviewSession } from "../interviews/interview.entity";
 import type { InterviewAudioMetrics } from "../interviews/interview-turn.entity";
 import { Question } from "../questions/question.entity";
 import type { QuestionType } from "../questions/question.entity";
+import { RagService } from "../rag/rag.service";
 import { InterviewEvaluationRequest, InterviewEvaluationResult } from "./llm.types";
 import { LlmService } from "./llm.service";
 
@@ -69,7 +70,8 @@ const INTERVIEW_EVALUATION_SCHEMA = {
 export class InterviewIntelligenceService {
   constructor(
     private readonly audioService: AudioService,
-    private readonly llmService: LlmService
+    private readonly llmService: LlmService,
+    private readonly ragService: RagService
   ) {}
 
   async evaluateAnswer(
@@ -93,6 +95,7 @@ export class InterviewIntelligenceService {
     const request: InterviewEvaluationRequest = {
       interview: {
         mode: interview.mode,
+        positionId: interview.positionId,
         position: {
           name: interview.position.name,
           slug: interview.position.slug,
@@ -112,7 +115,8 @@ export class InterviewIntelligenceService {
       },
       rawAnswer,
       transcript: submitAnswerDto.transcript?.trim() ?? null,
-      processedSpeech
+      processedSpeech,
+      retrievalContext: await this.loadRetrievalContext(interview.positionId, question, rawAnswer)
     };
 
     if (this.llmService.isReady()) {
@@ -137,6 +141,8 @@ export class InterviewIntelligenceService {
         "Score four dimensions from 0 to 100 as integers: technical, communication, depth, roleFit.",
         "Only mark keywordHits from the provided expectedKeywords list.",
         "Be conservative and grounded in the provided answer.",
+        "Use retrievalContext only as reference knowledge for judging completeness and producing a follow-up.",
+        "Do not give credit for facts that appear only in retrievalContext and not in the candidate answer.",
         "Set needsFollowUp to true only when the answer is shallow, incomplete, uncertain, or misses key concepts.",
         "If needsFollowUp is false, set followUpReason and followUpPrompt to null.",
         "evaluationSummary should be one concise sentence."
@@ -149,7 +155,15 @@ export class InterviewIntelligenceService {
           normalized: normalizedAnswer,
           transcript: request.transcript,
           audioMetrics: request.processedSpeech?.metrics ?? null
-        }
+        },
+        retrievalContext: request.retrievalContext.map((item) => ({
+          title: item.title,
+          summary: item.summary,
+          content: item.content,
+          tags: item.tags,
+          difficulty: item.difficulty,
+          score: item.score
+        }))
       },
       jsonSchema: INTERVIEW_EVALUATION_SCHEMA
     });
@@ -376,5 +390,23 @@ export class InterviewIntelligenceService {
 
   private unique(values: string[]) {
     return Array.from(new Set(values));
+  }
+
+  private async loadRetrievalContext(positionId: string, question: Question, rawAnswer: string) {
+    try {
+      const retrieval = await this.ragService.retrieveForInterviewQuestion({
+        positionId,
+        difficulty: question.difficulty,
+        question,
+        answerText: rawAnswer,
+        limit: 3
+      });
+
+      return retrieval.matches;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(`RAG retrieval failed during interview evaluation: ${message}`);
+      return [];
+    }
   }
 }

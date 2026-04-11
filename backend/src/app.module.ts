@@ -13,6 +13,7 @@ import { PositionsModule } from "./positions/positions.module";
 import { Position } from "./positions/position.entity";
 import { Question } from "./questions/question.entity";
 import { QuestionsModule } from "./questions/questions.module";
+import { RagModule } from "./rag/rag.module";
 import { RecommendationsModule } from "./recommendations/recommendations.module";
 import { InterviewReport } from "./reports/report.entity";
 import { ReportsModule } from "./reports/reports.module";
@@ -35,6 +36,7 @@ import { ReportsModule } from "./reports/reports.module";
     LlmModule,
     PositionsModule,
     QuestionsModule,
+    RagModule,
     ReportsModule,
     InterviewsModule,
     RecommendationsModule

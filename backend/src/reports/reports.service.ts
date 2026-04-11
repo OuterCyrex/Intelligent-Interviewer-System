@@ -95,6 +95,7 @@ export class ReportsService {
     const reportNarrative = await this.reportIntelligenceService.generateReportNarrative({
       interview: {
         id: interview.id,
+        positionId: interview.positionId,
         candidateName: interview.candidateName,
         difficulty: interview.difficulty,
         mode: interview.mode,
@@ -127,7 +128,8 @@ export class ReportsService {
         overallScore: turn.overallScore,
         questionTopic: turn.question?.topic ?? null,
         dimensionScores: turn.dimensionScores
-      }))
+      })),
+      retrievalContext: []
     });
 
     const existingReport = await this.reportsRepository.findOneBy({ interviewId });

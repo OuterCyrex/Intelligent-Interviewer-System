@@ -5,10 +5,10 @@ import {
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-import { KnowledgeService } from "../knowledge/knowledge.service";
 import { InterviewSession } from "../interviews/interview.entity";
 import { InterviewTurn } from "../interviews/interview-turn.entity";
 import { Question } from "../questions/question.entity";
+import { RagService } from "../rag/rag.service";
 import { ReportsService } from "../reports/reports.service";
 
 @Injectable()
@@ -20,7 +20,7 @@ export class RecommendationsService {
     private readonly turnsRepository: Repository<InterviewTurn>,
     @InjectRepository(Question)
     private readonly questionsRepository: Repository<Question>,
-    private readonly knowledgeService: KnowledgeService,
+    private readonly ragService: RagService,
     private readonly reportsService: ReportsService
   ) {}
 
@@ -51,11 +51,13 @@ export class RecommendationsService {
     const focusAreas = this.collectFrequentItems(turns.flatMap((turn) => turn.missedKeywords), 4);
     const effectiveFocusAreas =
       focusAreas.length > 0 ? focusAreas : interview.focusAreas.length > 0 ? interview.focusAreas : interview.position.highlights;
-    const knowledgeRecommendations = await this.knowledgeService.findRelevant(
-      interview.positionId,
-      effectiveFocusAreas,
-      4
-    );
+    const knowledgeRecommendations = await this.ragService.retrieveForFocusAreas({
+      positionId: interview.positionId,
+      focusAreas: effectiveFocusAreas,
+      difficulty: interview.difficulty,
+      limit: 4,
+      fallbackToRecent: true
+    });
     const practicedQuestionIds = turns
       .map((turn) => turn.questionId)
       .filter((questionId): questionId is string => Boolean(questionId));
@@ -87,12 +89,15 @@ export class RecommendationsService {
             ? latestHistory.report.overallScore - previousHistory.report.overallScore
             : null
       },
-      knowledgeRecommendations: knowledgeRecommendations.map((snippet) => ({
+      knowledgeRecommendations: knowledgeRecommendations.matches.map((snippet) => ({
         id: snippet.id,
         title: snippet.title,
         summary: snippet.summary,
         tags: snippet.tags,
-        difficulty: snippet.difficulty
+        difficulty: snippet.difficulty,
+        retrievalScore: snippet.score,
+        matchedTerms: snippet.matchedTerms,
+        matchedFields: snippet.matchedFields
       })),
       practiceQuestions: practiceQuestions.map((question) => ({
         id: question.id,

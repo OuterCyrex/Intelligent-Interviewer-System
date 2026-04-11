@@ -3,6 +3,7 @@ import type { InterviewSession } from "../interviews/interview.entity";
 import type { InterviewAudioMetrics, InterviewTurn, InterviewTurnScores } from "../interviews/interview-turn.entity";
 import type { Position } from "../positions/position.entity";
 import type { Question } from "../questions/question.entity";
+import type { RagMatch } from "../rag/rag.types";
 
 export interface InterviewEvaluationResult {
   normalizedAnswer: string;
@@ -23,7 +24,7 @@ export interface InterviewEvaluationResult {
 }
 
 export interface InterviewEvaluationRequest {
-  interview: Pick<InterviewSession, "mode"> & {
+  interview: Pick<InterviewSession, "mode" | "positionId"> & {
     position: Pick<Position, "name" | "slug" | "highlights" | "evaluationDimensions">;
   };
   question: Pick<
@@ -38,10 +39,14 @@ export interface InterviewEvaluationRequest {
     wordCount: number;
     metrics: ProcessedSpeechMetrics;
   } | null;
+  retrievalContext: RagMatch[];
 }
 
 export interface ReportGenerationRequest {
-  interview: Pick<InterviewSession, "id" | "candidateName" | "difficulty" | "mode" | "targetQuestionCount"> & {
+  interview: Pick<
+    InterviewSession,
+    "id" | "positionId" | "candidateName" | "difficulty" | "mode" | "targetQuestionCount"
+  > & {
     position: Pick<Position, "name" | "slug" | "highlights" | "evaluationDimensions">;
   };
   metrics: {
@@ -70,6 +75,7 @@ export interface ReportGenerationRequest {
       dimensionScores: InterviewTurnScores | null;
     }
   >;
+  retrievalContext: RagMatch[];
 }
 
 export interface ReportGenerationResult {
