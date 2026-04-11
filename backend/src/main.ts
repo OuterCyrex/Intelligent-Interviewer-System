@@ -1,8 +1,11 @@
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { loadBackendEnv } from "./config/load-env";
 import { AppModule } from "./app.module";
 import { SwaggerAppModule } from "./swagger/swagger-app.module";
+
+loadBackendEnv();
 
 async function bootstrap() {
   const swaggerOnly = process.env.SWAGGER_ONLY === "true";

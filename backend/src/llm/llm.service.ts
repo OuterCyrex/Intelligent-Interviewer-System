@@ -20,6 +20,17 @@ interface JsonCompletionResult<T> {
   content: T;
 }
 
+interface EmbeddingRequest {
+  input: string | string[];
+  model?: string;
+}
+
+interface EmbeddingResult {
+  provider: string;
+  model: string;
+  embeddings: number[][];
+}
+
 interface OpenAiChatCompletionResponse {
   model?: string;
   choices?: Array<{
@@ -39,12 +50,24 @@ interface OpenAiChatCompletionResponse {
   };
 }
 
+interface OpenAiEmbeddingResponse {
+  model?: string;
+  data?: Array<{
+    embedding?: number[];
+    index?: number;
+  }>;
+  error?: {
+    message?: string;
+  };
+}
+
 @Injectable()
 export class LlmService {
   private readonly provider = process.env.LLM_PROVIDER?.trim() || "openai";
   private readonly baseUrl = (process.env.OPENAI_BASE_URL?.trim() || "https://api.openai.com/v1").replace(/\/$/, "");
   private readonly apiKey = process.env.OPENAI_API_KEY?.trim() || "";
   private readonly model = process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini";
+  private readonly embeddingModel = process.env.OPENAI_EMBEDDING_MODEL?.trim() || "text-embedding-3-small";
   private readonly temperature = Number(process.env.OPENAI_TEMPERATURE ?? 0.2);
   private readonly timeoutMs = Number(process.env.OPENAI_TIMEOUT_MS ?? 20000);
   private readonly responseFormat = process.env.OPENAI_RESPONSE_FORMAT === "json_schema" ? "json_schema" : "json_object";
@@ -57,6 +80,7 @@ export class LlmService {
       ready: this.isReady(),
       provider: this.provider,
       model: this.model,
+      embeddingModel: this.embeddingModel,
       baseUrl: this.baseUrl,
       responseFormat: this.responseFormat
     };
@@ -114,6 +138,44 @@ export class LlmService {
       provider: this.provider,
       model: data.model || this.model,
       content: parsed
+    };
+  }
+
+  async createEmbeddings(request: EmbeddingRequest): Promise<EmbeddingResult> {
+    if (!this.isReady()) {
+      throw new Error("LLM provider is not configured.");
+    }
+
+    const response = await fetch(`${this.baseUrl}/embeddings`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: request.model || this.embeddingModel,
+        input: request.input
+      }),
+      signal: AbortSignal.timeout(this.timeoutMs)
+    });
+
+    const data = (await response.json()) as OpenAiEmbeddingResponse;
+    if (!response.ok) {
+      throw new Error(data.error?.message || `Embedding request failed with status ${response.status}.`);
+    }
+
+    const embeddings = (data.data ?? [])
+      .sort((left, right) => (left.index ?? 0) - (right.index ?? 0))
+      .map((item) => item.embedding ?? []);
+
+    if (embeddings.length === 0 || embeddings.some((embedding) => embedding.length === 0)) {
+      throw new Error("Embedding response did not include usable vectors.");
+    }
+
+    return {
+      provider: this.provider,
+      model: data.model || request.model || this.embeddingModel,
+      embeddings
     };
   }
 

@@ -4,9 +4,9 @@ services:
     container_name: intervene-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: intervene_app
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${POSTGRES_DB:-intervene_app}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
       - "5432:5432"
     volumes:
@@ -17,6 +17,25 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: intervene-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-intervene_app}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "3000:3000"
 
 volumes:
   postgres_data:

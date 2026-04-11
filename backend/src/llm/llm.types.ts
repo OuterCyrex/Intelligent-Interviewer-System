@@ -5,6 +5,12 @@ import type { Position } from "../positions/position.entity";
 import type { Question } from "../questions/question.entity";
 import type { RagMatch } from "../rag/rag.types";
 
+export interface ReportDimensionSummary {
+  key: "technical" | "communication" | "depth" | "roleFit";
+  label: string;
+  score: number;
+}
+
 export interface InterviewEvaluationResult {
   normalizedAnswer: string;
   transcript: string | null;
@@ -57,6 +63,11 @@ export interface ReportGenerationRequest {
     roleFitScore: number;
     questionTypeBreakdown: Record<string, number>;
     missedKeywords: string[];
+    focusAreas: string[];
+    strongestDimension: ReportDimensionSummary;
+    weakestDimension: ReportDimensionSummary;
+    answeredTurnCount: number;
+    followUpTurnCount: number;
   };
   turns: Array<
     Pick<

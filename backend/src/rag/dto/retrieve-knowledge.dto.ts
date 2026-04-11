@@ -24,4 +24,7 @@ export class RetrieveKnowledgeDto {
 
   @ApiPropertyOptional({ example: false, default: false })
   includeContent?: boolean;
+
+  @ApiPropertyOptional({ example: false, default: false })
+  fallbackToRecent?: boolean;
 }

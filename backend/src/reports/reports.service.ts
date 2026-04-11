@@ -5,6 +5,7 @@ import {
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { ReportIntelligenceService } from "../llm/report-intelligence.service";
+import type { ReportDimensionSummary } from "../llm/llm.types";
 import { Repository } from "typeorm";
 import { InterviewSession } from "../interviews/interview.entity";
 import { InterviewTurn } from "../interviews/interview-turn.entity";
@@ -12,6 +13,13 @@ import { InterviewReport } from "./report.entity";
 
 @Injectable()
 export class ReportsService {
+  private readonly dimensionLabels: Record<ReportDimensionSummary["key"], string> = {
+    technical: "技术准确性",
+    communication: "表达沟通",
+    depth: "知识深度",
+    roleFit: "岗位匹配度"
+  };
+
   constructor(
     @InjectRepository(InterviewSession)
     private readonly interviewsRepository: Repository<InterviewSession>,
@@ -91,7 +99,25 @@ export class ReportsService {
     const roleFitScore = this.average(scoredTurns.map((turn) => turn.dimensionScores?.roleFit ?? 0));
     const overallScore = this.average(scoredTurns.map((turn) => turn.overallScore ?? 0));
     const missedKeywords = this.collectFrequentItems(scoredTurns.flatMap((turn) => turn.missedKeywords), 3);
+    const focusAreas =
+      missedKeywords.length > 0
+        ? missedKeywords
+        : interview.focusAreas.length > 0
+          ? interview.focusAreas
+          : interview.position.highlights;
     const questionTypeBreakdown = this.buildQuestionTypeBreakdown(scoredTurns);
+    const strongestDimension = this.pickDimensionSummary({
+      technical: technicalScore,
+      communication: communicationScore,
+      depth: depthScore,
+      roleFit: roleFitScore
+    }, "strongest");
+    const weakestDimension = this.pickDimensionSummary({
+      technical: technicalScore,
+      communication: communicationScore,
+      depth: depthScore,
+      roleFit: roleFitScore
+    }, "weakest");
     const reportNarrative = await this.reportIntelligenceService.generateReportNarrative({
       interview: {
         id: interview.id,
@@ -114,14 +140,19 @@ export class ReportsService {
         depthScore,
         roleFitScore,
         questionTypeBreakdown,
-        missedKeywords
+        missedKeywords,
+        focusAreas,
+        strongestDimension,
+        weakestDimension,
+        answeredTurnCount: scoredTurns.length,
+        followUpTurnCount: scoredTurns.filter((turn) => turn.kind === "follow_up").length
       },
       turns: scoredTurns.map((turn) => ({
         sequence: turn.sequence,
         kind: turn.kind,
         questionType: turn.questionType,
         prompt: turn.prompt,
-        answerText: turn.answerText,
+        answerText: this.truncateText(turn.answerText, 320),
         keywordHits: turn.keywordHits,
         missedKeywords: turn.missedKeywords,
         evaluationSummary: turn.evaluationSummary,
@@ -187,5 +218,34 @@ export class ReportsService {
       result[type] = Math.round(value.total / value.count);
       return result;
     }, {});
+  }
+
+  private pickDimensionSummary(
+    scores: Record<ReportDimensionSummary["key"], number>,
+    mode: "strongest" | "weakest"
+  ): ReportDimensionSummary {
+    const ordered = (Object.entries(scores) as Array<[ReportDimensionSummary["key"], number]>)
+      .sort((left, right) => {
+        return mode === "strongest" ? right[1] - left[1] : left[1] - right[1];
+      });
+    const [key, score] = ordered[0];
+
+    return {
+      key,
+      label: this.dimensionLabels[key],
+      score
+    };
+  }
+
+  private truncateText(value: string | null, limit: number) {
+    const normalized = value?.trim();
+    if (!normalized) {
+      return null;
+    }
+    if (normalized.length <= limit) {
+      return normalized;
+    }
+
+    return `${normalized.slice(0, limit - 1)}…`;
   }
 }
