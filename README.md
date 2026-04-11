@@ -26,8 +26,8 @@ This project uses large language models, multi-turn dialogue, knowledge retrieva
 The current phase focuses on a practical MVP with a complete end-to-end flow:
 
 - Support at least two target roles
-- `Java Backend Engineer`
-- `Web Frontend Engineer`
+- `Java 后端工程师`
+- `Web 前端工程师`
 - Support text-based mock interviews
 - Support speech input through speech-to-text integration
 - Support dynamic follow-up questions
@@ -45,6 +45,22 @@ Current backend baseline:
 - `Viper`
 
 The backend uses a modular monolith architecture and exposes REST APIs. In the MVP phase, the priority is delivery speed, maintainability, and local runnability. Retrieval, scoring, and multimodal capabilities can be improved incrementally later.
+
+## Database Bootstrap
+
+The backend now includes SQL-based database bootstrap for local Docker startup:
+
+- `backend/docker/postgres/init/001_extensions.sql`: enables `pgcrypto` and `pgvector`
+- `backend/docker/postgres/init/002_schema.sql`: creates the MVP tables
+- `backend/docker/postgres/init/003_seed_mvp.sql`: inserts the initial MVP positions, questions, and knowledge snippets
+
+When PostgreSQL starts for the first time through `backend/docker-compose.yml`, these scripts are executed automatically via `/docker-entrypoint-initdb.d`.
+
+Modeling guidance:
+
+- Use PostgreSQL relational tables for the core business data such as positions, questions, interviews, turns, and reports.
+- Use `pgvector` as an enhancement for retrieval-oriented data, especially knowledge embeddings.
+- Do not replace the core tables with pure vector storage. Vector search is useful for semantic recall, but the source of truth should remain normal relational tables.
 
 ## Core Backend Modules
 
