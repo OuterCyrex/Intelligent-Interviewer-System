@@ -18,6 +18,9 @@ export interface RagMatch {
   tags: string[];
   difficulty: QuestionDifficulty;
   score: number;
+  textScore?: number;
+  vectorScore?: number;
+  retrievalSource?: "hybrid" | "vector" | "text" | "fallback";
   matchedTerms: string[];
   matchedFields: string[];
 }
@@ -27,6 +30,7 @@ export interface RagRetrievalResult {
   query: string | null;
   normalizedTerms: string[];
   totalCandidates: number;
-  matches: RagMatch[]
-
+  retrievalMode: "hybrid" | "text" | "fallback";
+  embeddingUsed: boolean;
+  matches: RagMatch[];
 }

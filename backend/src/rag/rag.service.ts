@@ -62,10 +62,22 @@ export class RagService {
       positionId,
       difficulty: request.difficulty
     });
-
-    const ranked = snippets
+    const rankedTextMatches = snippets
       .map((snippet) => this.rankSnippet(snippet, normalizedTerms, request.includeContent ?? false))
-      .filter((item) => item.score > 0)
+      .filter((item) => (item.textScore ?? 0) > 0);
+    const vectorQueryText = this.buildVectorQueryText(request.query, request.terms, normalizedTerms);
+    const vectorMatches = vectorQueryText
+      ? await this.knowledgeService.searchByEmbedding({
+          positionId,
+          queryText: vectorQueryText,
+          difficulty: request.difficulty,
+          limit: limit * 3,
+          includeContent: request.includeContent ?? false,
+          minSimilarity: 0.15
+        })
+      : [];
+
+    const ranked = this.mergeMatches(rankedTextMatches, vectorMatches)
       .sort((left, right) => this.compareMatches(left, right))
       .slice(0, limit)
       .map((item) => this.stripInternalFields(item));
@@ -76,6 +88,8 @@ export class RagService {
         query: request.query?.trim() || null,
         normalizedTerms,
         totalCandidates: snippets.length,
+        retrievalMode: vectorMatches.length > 0 ? "hybrid" : "text",
+        embeddingUsed: vectorMatches.length > 0,
         matches: ranked
       };
     }
@@ -90,6 +104,9 @@ export class RagService {
         tags: snippet.tags,
         difficulty: snippet.difficulty,
         score: 0,
+        textScore: 0,
+        vectorScore: 0,
+        retrievalSource: "fallback" as const,
         matchedTerms: [],
         matchedFields: []
       }));
@@ -99,6 +116,8 @@ export class RagService {
       query: request.query?.trim() || null,
       normalizedTerms,
       totalCandidates: snippets.length,
+      retrievalMode: "fallback",
+      embeddingUsed: false,
       matches: fallbackMatches
     };
   }
@@ -164,7 +183,7 @@ export class RagService {
 
   private tokenize(input: string) {
     const normalized = input.toLowerCase();
-    const tokens = normalized.match(/[a-z0-9][a-z0-9+#.-]*/g) ?? [];
+    const tokens = normalized.match(/[\p{Script=Han}]{2,}|[a-z0-9][a-z0-9+#.-]*/gu) ?? [];
 
     return tokens.filter((token) => token.length > 1 && !STOP_WORDS.has(token));
   }
@@ -189,7 +208,7 @@ export class RagService {
       content: snippet.content.toLowerCase()
     };
 
-    let score = 0;
+    let rawTextScore = 0;
     const matchedTerms = new Set<string>();
     const matchedFields = new Set<string>();
 
@@ -218,14 +237,20 @@ export class RagService {
       }
 
       if (termScore > 0) {
-        score += termScore;
+        rawTextScore += termScore;
         matchedTerms.add(term);
       }
     }
 
     if (matchedTerms.size >= 2) {
-      score += matchedTerms.size;
+      rawTextScore += matchedTerms.size;
     }
+
+    const maxTextScore = Math.max(1, normalizedTerms.length * 19);
+    const normalizedTextScore = normalizedTerms.length > 0
+      ? Math.min(1, rawTextScore / maxTextScore)
+      : 0;
+    const score = normalizedTextScore * 100;
 
     return {
       id: snippet.id,
@@ -235,6 +260,9 @@ export class RagService {
       tags: snippet.tags,
       difficulty: snippet.difficulty,
       score,
+      textScore: Math.round(score * 10) / 10,
+      vectorScore: 0,
+      retrievalSource: "text",
       matchedTerms: Array.from(matchedTerms),
       matchedFields: Array.from(matchedFields),
       updatedAt: snippet.updatedAt.getTime()
@@ -244,6 +272,7 @@ export class RagService {
   private compareMatches(left: RankedSnippet, right: RankedSnippet) {
     return (
       right.score - left.score ||
+      (right.vectorScore ?? 0) - (left.vectorScore ?? 0) ||
       right.matchedTerms.length - left.matchedTerms.length ||
       right.updatedAt - left.updatedAt
     );
@@ -257,9 +286,74 @@ export class RagService {
       content: match.content,
       tags: match.tags,
       difficulty: match.difficulty,
-      score: match.score,
+      score: Math.round(match.score * 10) / 10,
+      textScore: match.textScore,
+      vectorScore: match.vectorScore,
+      retrievalSource: match.retrievalSource,
       matchedTerms: match.matchedTerms,
       matchedFields: match.matchedFields
     };
+  }
+
+  private buildVectorQueryText(query?: string, terms?: string[], normalizedTerms?: string[]) {
+    const parts = [
+      query?.trim() || "",
+      ...(terms ?? []).map((term) => term.trim()),
+      ...(normalizedTerms ?? [])
+    ].filter(Boolean);
+
+    return Array.from(new Set(parts)).join("\n");
+  }
+
+  private mergeMatches(
+    textMatches: RankedSnippet[],
+    vectorMatches: Array<{
+      id: string;
+      title: string;
+      summary: string;
+      content: string | null;
+      tags: string[];
+      difficulty: QuestionDifficulty;
+      similarity: number;
+    }>
+  ) {
+    const merged = new Map<string, RankedSnippet>();
+
+    for (const textMatch of textMatches) {
+      merged.set(textMatch.id, textMatch);
+    }
+
+    for (const vectorMatch of vectorMatches) {
+      const vectorScore = Math.round(Math.max(0, Math.min(1, vectorMatch.similarity)) * 1000) / 10;
+      const existing = merged.get(vectorMatch.id);
+
+      if (!existing) {
+        merged.set(vectorMatch.id, {
+          id: vectorMatch.id,
+          title: vectorMatch.title,
+          summary: vectorMatch.summary,
+          content: vectorMatch.content,
+          tags: vectorMatch.tags,
+          difficulty: vectorMatch.difficulty,
+          score: vectorScore,
+          textScore: 0,
+          vectorScore,
+          retrievalSource: "vector",
+          matchedTerms: [],
+          matchedFields: ["vector"],
+          updatedAt: 0
+        });
+        continue;
+      }
+
+      existing.content = existing.content ?? vectorMatch.content;
+      existing.vectorScore = vectorScore;
+      existing.matchedFields = Array.from(new Set([...existing.matchedFields, "vector"]));
+      existing.score = Math.round(((existing.textScore ?? 0) * 0.35 + vectorScore * 0.65) * 10) / 10;
+      existing.retrievalSource = "hybrid";
+      merged.set(existing.id, existing);
+    }
+
+    return Array.from(merged.values());
   }
 }

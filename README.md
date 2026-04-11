@@ -56,6 +56,40 @@ The backend now includes SQL-based database bootstrap for local Docker startup:
 
 When PostgreSQL starts for the first time through `backend/docker-compose.yml`, these scripts are executed automatically via `/docker-entrypoint-initdb.d`.
 
+## LLM Configuration
+
+The backend now supports loading environment variables from `backend/.env` automatically at startup. A template file is provided at `backend/.env.example`.
+
+Recommended setup:
+
+1. Copy `backend/.env.example` to `backend/.env`
+2. Fill in `OPENAI_API_KEY`
+3. Adjust `OPENAI_BASE_URL` and `OPENAI_MODEL` if you are using another OpenAI-compatible provider
+
+Minimum variables:
+
+- `LLM_ENABLED=true`
+- `OPENAI_API_KEY=...`
+- `OPENAI_BASE_URL=https://api.openai.com/v1`
+- `OPENAI_MODEL=gpt-4o-mini`
+- `OPENAI_EMBEDDING_MODEL=text-embedding-3-small`
+
+Useful optional variables:
+
+- `OPENAI_RESPONSE_FORMAT=json_schema`
+- `OPENAI_TEMPERATURE=0.2`
+- `OPENAI_TIMEOUT_MS=20000`
+- `ENABLE_SWAGGER=true`
+
+Local run examples:
+
+- Backend only:
+  `cd backend && yarn start`
+- Docker Compose:
+  `cd backend && cp .env.example .env && docker compose up --build`
+
+LLM status can be checked through `GET /llm/status`.
+
 Modeling guidance:
 
 - Use PostgreSQL relational tables for the core business data such as positions, questions, interviews, turns, and reports.

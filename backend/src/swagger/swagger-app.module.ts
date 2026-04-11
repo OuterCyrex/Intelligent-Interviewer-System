@@ -65,6 +65,19 @@ const questionsServiceStub = {
 
 const knowledgeServiceStub = {
   create: async () => ({}),
+  importMarkdown: async () => ({
+    importedCount: 0,
+    position: {},
+    embeddingProvider: "openai",
+    embeddingModel: "text-embedding-3-small",
+    chunks: []
+  }),
+  rebuildEmbeddings: async () => ({
+    updatedCount: 0,
+    embeddingProvider: "openai",
+    embeddingModel: "text-embedding-3-small",
+    snippets: []
+  }),
   findAll: async () => [],
   findOne: async () => ({}),
   update: async () => ({}),
@@ -96,6 +109,7 @@ const llmServiceStub = {
     ready: false,
     provider: "openai",
     model: "gpt-4o-mini",
+    embeddingModel: "text-embedding-3-small",
     baseUrl: "https://api.openai.com/v1",
     responseFormat: "json_object"
   })
