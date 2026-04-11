@@ -39,19 +39,19 @@ interface SeedKnowledgeSnippet {
 const SEED_POSITIONS: SeedPosition[] = [
   {
     slug: "java-backend-engineer",
-    name: "Java Backend Engineer",
-    description: "Backend-focused mock interviews covering Java, distributed systems, data stores, and production trade-offs.",
-    highlights: ["Spring Boot", "MySQL", "Redis", "message queue", "system design"],
-    evaluationDimensions: ["technical correctness", "knowledge depth", "communication", "role fit"],
+    name: "Java 后端工程师",
+    description: "面向后端岗位的模拟面试，覆盖 Java、分布式系统、数据存储以及生产环境中的技术权衡。",
+    highlights: ["Spring Boot", "MySQL", "Redis", "消息队列", "系统设计"],
+    evaluationDimensions: ["技术准确性", "知识深度", "表达沟通", "岗位匹配度"],
     defaultDifficulty: "intermediate",
     defaultQuestionCount: 4
   },
   {
     slug: "web-frontend-engineer",
-    name: "Web Frontend Engineer",
-    description: "Frontend-focused interviews spanning browser internals, framework engineering, performance, and debugging.",
-    highlights: ["browser rendering", "Vue or React", "performance optimization", "engineering quality"],
-    evaluationDimensions: ["technical correctness", "knowledge depth", "communication", "role fit"],
+    name: "Web 前端工程师",
+    description: "面向前端岗位的模拟面试，覆盖浏览器原理、框架工程化、性能优化与线上排障。",
+    highlights: ["浏览器渲染", "Vue 或 React", "性能优化", "工程质量"],
+    evaluationDimensions: ["技术准确性", "知识深度", "表达沟通", "岗位匹配度"],
     defaultDifficulty: "intermediate",
     defaultQuestionCount: 4
   }
@@ -60,141 +60,141 @@ const SEED_POSITIONS: SeedPosition[] = [
 const SEED_QUESTIONS: SeedQuestion[] = [
   {
     positionSlug: "java-backend-engineer",
-    topic: "Cache consistency",
+    topic: "缓存一致性",
     type: "technical",
     difficulty: "intermediate",
-    content: "How would you handle cache consistency between Redis and MySQL in a high-concurrency system?",
-    expectedKeywords: ["cache invalidation", "double delete", "retry", "database consistency", "hot key"],
-    followUpHints: ["failure handling", "retry timing", "hot key protection"],
-    evaluationFocus: ["Redis", "MySQL", "system design"],
-    rubric: "Explain a concrete consistency strategy, mention failure paths, and discuss mitigation for high traffic."
+    content: "在高并发系统中，你会如何处理 Redis 与 MySQL 之间的缓存一致性问题？",
+    expectedKeywords: ["缓存失效", "延迟双删", "重试", "数据库一致性", "热点 Key"],
+    followUpHints: ["故障处理", "重试时机", "热点 Key 保护"],
+    evaluationFocus: ["Redis", "MySQL", "系统设计"],
+    rubric: "需要给出具体的一致性方案，说明失败路径，并讨论在高流量下的缓解手段。"
   },
   {
     positionSlug: "java-backend-engineer",
-    topic: "Project deep dive",
+    topic: "项目深挖",
     type: "project",
     difficulty: "intermediate",
-    content: "Pick a backend project you worked on and explain the architecture, the bottlenecks you hit, and how you resolved them.",
-    expectedKeywords: ["architecture", "bottleneck", "metrics", "trade-off", "optimization"],
-    followUpHints: ["how you measured impact", "why the chosen solution was appropriate"],
-    evaluationFocus: ["system design", "communication"],
-    rubric: "Look for ownership, reasoning, metrics, and the ability to connect technical choices to outcomes."
+    content: "选择一个你做过的后端项目，说明整体架构、遇到的瓶颈，以及你是如何定位并解决这些问题的。",
+    expectedKeywords: ["架构", "瓶颈", "指标", "权衡", "优化"],
+    followUpHints: ["如何衡量效果", "为什么这个方案合适"],
+    evaluationFocus: ["系统设计", "表达沟通"],
+    rubric: "重点考察候选人的负责范围、推理过程、指标意识，以及是否能把技术选择和结果关联起来。"
   },
   {
     positionSlug: "java-backend-engineer",
-    topic: "Order spike scenario",
+    topic: "订单突增场景",
     type: "scenario",
     difficulty: "intermediate",
-    content: "Your order service sees a sudden traffic spike and downstream dependencies start timing out. What do you do first and how do you stabilize the system?",
-    expectedKeywords: ["rate limit", "degrade", "queue", "timeout", "monitoring"],
-    followUpHints: ["stabilization order", "observability", "rollback strategy"],
-    evaluationFocus: ["message queue", "system design"],
-    rubric: "Expect prioritization, containment, observability, and a staged recovery plan."
+    content: "订单服务突然流量暴涨，下游依赖开始超时。你会先做什么？又会如何一步步把系统稳定下来？",
+    expectedKeywords: ["限流", "降级", "队列", "超时", "监控"],
+    followUpHints: ["稳定顺序", "可观测性", "回滚策略"],
+    evaluationFocus: ["消息队列", "系统设计"],
+    rubric: "重点看是否具备明确的优先级、隔离思路、可观测性意识，以及分阶段恢复方案。"
   },
   {
     positionSlug: "java-backend-engineer",
-    topic: "Cross-team communication",
+    topic: "跨团队沟通",
     type: "behavioral",
     difficulty: "intermediate",
-    content: "Tell me about a time you had to push back on a backend requirement because of reliability or scalability risk.",
-    expectedKeywords: ["risk", "trade-off", "stakeholder", "communication", "outcome"],
-    followUpHints: ["how you influenced the decision", "what data you used"],
-    evaluationFocus: ["communication", "role fit"],
-    rubric: "Expect clear context, decision criteria, and evidence of stakeholder communication."
+    content: "讲一个你因为可靠性或可扩展性风险，而对后端需求提出异议并推动调整的经历。",
+    expectedKeywords: ["风险", "权衡", "干系人", "沟通", "结果"],
+    followUpHints: ["你如何影响决策", "你使用了哪些数据"],
+    evaluationFocus: ["表达沟通", "岗位匹配度"],
+    rubric: "重点看背景是否清晰、决策标准是否明确，以及是否能体现与干系人的沟通能力。"
   },
   {
     positionSlug: "web-frontend-engineer",
-    topic: "Rendering pipeline",
+    topic: "渲染流水线",
     type: "technical",
     difficulty: "intermediate",
-    content: "Walk me through how the browser turns HTML, CSS, and JavaScript into pixels on the screen, and where performance issues usually appear.",
-    expectedKeywords: ["DOM", "CSSOM", "render tree", "layout", "paint"],
-    followUpHints: ["reflow causes", "JavaScript impact", "performance tracing"],
-    evaluationFocus: ["browser rendering", "performance optimization"],
-    rubric: "Expect a clear rendering pipeline explanation and awareness of common bottlenecks."
+    content: "请你说明浏览器如何把 HTML、CSS 和 JavaScript 转换成最终屏幕上的像素，以及性能问题通常出现在什么阶段。",
+    expectedKeywords: ["DOM", "CSSOM", "渲染树", "布局", "绘制"],
+    followUpHints: ["重排原因", "JavaScript 的影响", "性能分析"],
+    evaluationFocus: ["浏览器渲染", "性能优化"],
+    rubric: "重点考察是否能清晰解释渲染流水线，以及是否了解常见性能瓶颈。"
   },
   {
     positionSlug: "web-frontend-engineer",
-    topic: "Frontend project deep dive",
+    topic: "前端项目深挖",
     type: "project",
     difficulty: "intermediate",
-    content: "Choose a frontend project and explain the architecture, collaboration model, and the biggest engineering trade-off you made.",
-    expectedKeywords: ["architecture", "state management", "trade-off", "collaboration", "delivery"],
-    followUpHints: ["how the architecture evolved", "quality controls"],
-    evaluationFocus: ["engineering quality", "communication"],
-    rubric: "Look for system thinking, ownership, and how quality was balanced with delivery speed."
+    content: "选择一个你做过的前端项目，介绍架构设计、协作方式，以及你做过的最大一次工程权衡。",
+    expectedKeywords: ["架构", "状态管理", "权衡", "协作", "交付"],
+    followUpHints: ["架构如何演进", "质量控制手段"],
+    evaluationFocus: ["工程质量", "表达沟通"],
+    rubric: "重点看是否具备系统性思考、项目主人翁意识，以及如何平衡质量与交付速度。"
   },
   {
     positionSlug: "web-frontend-engineer",
-    topic: "Large page slowdown",
+    topic: "页面性能变慢",
     type: "scenario",
     difficulty: "intermediate",
-    content: "A critical page becomes noticeably slower after a new release. How would you investigate and fix it?",
-    expectedKeywords: ["profiling", "bundle", "waterfall", "render", "regression"],
-    followUpHints: ["measurement plan", "rollback criteria", "preventing recurrence"],
-    evaluationFocus: ["performance optimization", "engineering quality"],
-    rubric: "Expect a hypothesis-driven debugging flow and clear rollback versus fix trade-offs."
+    content: "一个核心页面在新版本发布后明显变慢了。你会如何排查，并最终修复这个问题？",
+    expectedKeywords: ["性能分析", "构建产物", "瀑布流", "渲染", "回归"],
+    followUpHints: ["测量方案", "回滚标准", "如何防止再次发生"],
+    evaluationFocus: ["性能优化", "工程质量"],
+    rubric: "重点看是否有假设驱动的排查流程，以及对回滚和修复之间权衡的理解。"
   },
   {
     positionSlug: "web-frontend-engineer",
-    topic: "Influencing product scope",
+    topic: "推动产品范围调整",
     type: "behavioral",
     difficulty: "intermediate",
-    content: "Describe a time you pushed for a frontend engineering improvement that product or design did not initially prioritize.",
-    expectedKeywords: ["influence", "trade-off", "user impact", "communication", "result"],
-    followUpHints: ["how you framed the issue", "how you measured impact"],
-    evaluationFocus: ["communication", "role fit"],
-    rubric: "Expect stakeholder management, prioritization, and an outcome tied to users or team efficiency."
+    content: "描述一次你推动前端工程改进，但产品或设计最初并不优先支持的经历。",
+    expectedKeywords: ["影响力", "权衡", "用户影响", "沟通", "结果"],
+    followUpHints: ["你如何定义问题", "你如何衡量影响"],
+    evaluationFocus: ["表达沟通", "岗位匹配度"],
+    rubric: "重点看干系人管理、优先级判断，以及最终结果是否和用户价值或团队效率相关。"
   }
 ];
 
 const SEED_KNOWLEDGE: SeedKnowledgeSnippet[] = [
   {
     positionSlug: "java-backend-engineer",
-    title: "Cache and database consistency patterns",
-    summary: "Common options for keeping Redis and MySQL data aligned under write pressure.",
-    content: "Cover cache invalidation timing, delayed double delete, idempotent retry, hot key protection, and what to monitor after deployment.",
-    tags: ["cache invalidation", "Redis", "MySQL", "retry", "hot key"],
+    title: "缓存与数据库一致性模式",
+    summary: "总结在高写入压力下保持 Redis 与 MySQL 数据一致的常见方案。",
+    content: "覆盖缓存失效时机、延迟双删、幂等重试、热点 Key 保护，以及上线后需要重点关注的监控项。",
+    tags: ["缓存失效", "Redis", "MySQL", "重试", "热点 Key"],
     difficulty: "intermediate"
   },
   {
     positionSlug: "java-backend-engineer",
-    title: "Traffic spike stabilization playbook",
-    summary: "A practical incident flow for overload and downstream timeout scenarios.",
-    content: "Prioritize observability, rate limiting, graceful degradation, queue buffering, timeout budgets, circuit breaking, and rollback triggers.",
-    tags: ["rate limit", "queue", "timeout", "monitoring", "degrade"],
+    title: "流量突增稳定性处置手册",
+    summary: "面向过载与下游超时场景的实战处理流程。",
+    content: "优先关注可观测性、限流、优雅降级、队列缓冲、超时预算、熔断策略以及回滚触发条件。",
+    tags: ["限流", "队列", "超时", "监控", "降级"],
     difficulty: "intermediate"
   },
   {
     positionSlug: "java-backend-engineer",
-    title: "Backend project storytelling",
-    summary: "How to explain ownership, bottlenecks, and measurable impact in project interviews.",
-    content: "Structure the answer around context, architecture, bottleneck, measurement, trade-off, implementation, and result.",
-    tags: ["architecture", "bottleneck", "metrics", "trade-off"],
+    title: "后端项目讲述方法",
+    summary: "帮助候选人在项目面试中讲清负责范围、瓶颈与可量化结果。",
+    content: "建议按项目背景、系统架构、性能瓶颈、衡量指标、技术权衡、实施过程和最终结果来组织表达。",
+    tags: ["架构", "瓶颈", "指标", "权衡"],
     difficulty: "intermediate"
   },
   {
     positionSlug: "web-frontend-engineer",
-    title: "Browser rendering bottlenecks",
-    summary: "A compact refresher on the rendering pipeline and typical causes of slow pages.",
-    content: "Trace DOM, CSSOM, render tree, layout, paint, compositing, main-thread blocking, and how forced reflow appears in profiling tools.",
-    tags: ["DOM", "CSSOM", "render tree", "layout", "paint"],
+    title: "浏览器渲染瓶颈",
+    summary: "快速回顾渲染流水线，以及页面变慢时最常见的原因。",
+    content: "梳理 DOM、CSSOM、渲染树、布局、绘制、合成、主线程阻塞，以及强制重排在性能分析工具中的表现。",
+    tags: ["DOM", "CSSOM", "渲染树", "布局", "绘制"],
     difficulty: "intermediate"
   },
   {
     positionSlug: "web-frontend-engineer",
-    title: "Performance regression debugging flow",
-    summary: "A disciplined path from symptom to rollback or fix for frontend slowdowns.",
-    content: "Measure baseline, inspect bundle changes, compare network waterfall, profile rendering, isolate regressions, and guard against repeat incidents.",
-    tags: ["profiling", "bundle", "waterfall", "regression", "render"],
+    title: "性能回归排查流程",
+    summary: "提供一条从问题出现到回滚或修复的前端性能排查路径。",
+    content: "先建立基线，再检查构建产物变化、对比网络瀑布流、分析渲染过程、隔离回归点，并补上防止复发的措施。",
+    tags: ["性能分析", "构建产物", "瀑布流", "回归", "渲染"],
     difficulty: "intermediate"
   },
   {
     positionSlug: "web-frontend-engineer",
-    title: "Frontend project interview framing",
-    summary: "How to present architecture and collaboration choices in a frontend project answer.",
-    content: "Describe architecture, state strategy, collaboration with product and design, release constraints, quality gates, and the trade-off behind the final choice.",
-    tags: ["architecture", "state management", "collaboration", "trade-off"],
+    title: "前端项目面试表达框架",
+    summary: "帮助候选人更有条理地讲清前端项目中的架构与协作决策。",
+    content: "可以围绕系统架构、状态策略、与产品和设计的协作方式、发布时间约束、质量门禁以及最终方案背后的权衡来展开。",
+    tags: ["架构", "状态管理", "协作", "权衡"],
     difficulty: "intermediate"
   }
 ];
@@ -211,7 +211,7 @@ export class MvpSeedService implements OnApplicationBootstrap {
   ) {}
 
   async onApplicationBootstrap() {
-    const enabled = (process.env.MVP_SEED ?? "true").toLowerCase() === "true";
+    const enabled = (process.env.MVP_SEED ?? "false").toLowerCase() === "true";
     if (!enabled) {
       return;
     }

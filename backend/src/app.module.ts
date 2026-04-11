@@ -3,6 +3,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { AudioModule } from "./audio/audio.module";
+import { MvpSeedService } from "./bootstrap/mvp-seed.service";
 import { InterviewSession } from "./interviews/interview.entity";
 import { InterviewTurn } from "./interviews/interview-turn.entity";
 import { InterviewsModule } from "./interviews/interviews.module";
@@ -42,6 +43,6 @@ import { ReportsModule } from "./reports/reports.module";
     RecommendationsModule
   ],
   controllers: [AppController],
-  providers: [AppService]
+  providers: [AppService, MvpSeedService]
 })
 export class AppModule {}
