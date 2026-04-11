@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { RagService } from "../rag/rag.service";
 import { ReportGenerationRequest, ReportGenerationResult } from "./llm.types";
 import { LlmService } from "./llm.service";
 
@@ -38,19 +39,24 @@ const REPORT_GENERATION_SCHEMA = {
 
 @Injectable()
 export class ReportIntelligenceService {
-  constructor(private readonly llmService: LlmService) {}
+  constructor(
+    private readonly llmService: LlmService,
+    private readonly ragService: RagService
+  ) {}
 
   async generateReportNarrative(request: ReportGenerationRequest): Promise<ReportGenerationResult> {
+    const requestWithContext = await this.attachRetrievalContext(request);
+
     if (this.llmService.isReady()) {
       try {
-        return await this.generateWithLlm(request);
+        return await this.generateWithLlm(requestWithContext);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         console.warn(`LLM report generation failed, falling back to heuristics: ${message}`);
       }
     }
 
-    return this.generateHeuristically(request);
+    return this.generateHeuristically(requestWithContext);
   }
 
   private async generateWithLlm(request: ReportGenerationRequest): Promise<ReportGenerationResult> {
@@ -60,6 +66,7 @@ export class ReportIntelligenceService {
         "You are generating a structured mock interview report for a computer-science interview platform.",
         "Return JSON only.",
         "Use the provided interview metrics and turn data.",
+        "Use retrievalContext to suggest concrete next steps and study material focus.",
         "Keep summary concise and specific.",
         "strengths should be short evidence-based observations.",
         "improvementAreas should identify the most important gaps.",
@@ -159,12 +166,16 @@ export class ReportIntelligenceService {
     const steps: string[] = [];
     const { missedKeywords, communicationScore, depthScore } = request.metrics;
     const highlights = request.interview.position.highlights;
+    const retrievedSnippet = request.retrievalContext[0];
 
     if (missedKeywords.length > 0) {
       steps.push(`Review ${missedKeywords[0]} and practice explaining it with a concrete example`);
     }
     if (highlights.length > 0) {
       steps.push(`Prepare one project walkthrough around ${highlights[0]}`);
+    }
+    if (retrievedSnippet) {
+      steps.push(`Study ${retrievedSnippet.title} and connect it to one interview-ready scenario answer`);
     }
     if (communicationScore < 75) {
       steps.push("Rehearse longer answers out loud using a three-step structure");
@@ -185,5 +196,35 @@ export class ReportIntelligenceService {
       .filter(Boolean);
 
     return Array.from(new Set(normalized)).slice(0, limit);
+  }
+
+  private async attachRetrievalContext(request: ReportGenerationRequest) {
+    const seedTerms =
+      request.metrics.missedKeywords.length > 0
+        ? request.metrics.missedKeywords
+        : request.interview.position.highlights;
+
+    try {
+      const retrieval = await this.ragService.retrieveForFocusAreas({
+        positionId: request.interview.positionId,
+        focusAreas: seedTerms,
+        difficulty: request.interview.difficulty,
+        limit: 3,
+        includeContent: true,
+        fallbackToRecent: true
+      });
+
+      return {
+        ...request,
+        retrievalContext: retrieval.matches
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(`RAG retrieval failed during report generation: ${message}`);
+      return {
+        ...request,
+        retrievalContext: []
+      };
+    }
   }
 }

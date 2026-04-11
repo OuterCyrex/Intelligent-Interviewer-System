@@ -13,6 +13,8 @@ import { PositionsController } from "../positions/positions.controller";
 import { PositionsService } from "../positions/positions.service";
 import { QuestionsController } from "../questions/questions.controller";
 import { QuestionsService } from "../questions/questions.service";
+import { RagController } from "../rag/rag.controller";
+import { RagService } from "../rag/rag.service";
 import { RecommendationsController } from "../recommendations/recommendations.controller";
 import { RecommendationsService } from "../recommendations/recommendations.service";
 import { ReportsController } from "../reports/reports.controller";
@@ -99,6 +101,16 @@ const llmServiceStub = {
   })
 } as LlmService;
 
+const ragServiceStub = {
+  retrieve: async () => ({
+    positionId: "",
+    query: null,
+    normalizedTerms: [],
+    totalCandidates: 0,
+    matches: []
+  })
+} as unknown as RagService;
+
 @Module({
   controllers: [
     AppController,
@@ -109,7 +121,8 @@ const llmServiceStub = {
     InterviewsController,
     ReportsController,
     RecommendationsController,
-    LlmController
+    LlmController,
+    RagController
   ],
   providers: [
     {
@@ -147,6 +160,10 @@ const llmServiceStub = {
     {
       provide: LlmService,
       useValue: llmServiceStub
+    },
+    {
+      provide: RagService,
+      useValue: ragServiceStub
     }
   ]
 })
