@@ -4,6 +4,9 @@ import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { AudioModule } from "./audio/audio.module";
 import { MvpSeedService } from "./bootstrap/mvp-seed.service";
+import { SchemaUpgradeService } from "./bootstrap/schema-upgrade.service";
+import { Discussion } from "./discussions/discussion.entity";
+import { DiscussionsModule } from "./discussions/discussions.module";
 import { InterviewSession } from "./interviews/interview.entity";
 import { InterviewTurn } from "./interviews/interview-turn.entity";
 import { InterviewsModule } from "./interviews/interviews.module";
@@ -18,6 +21,9 @@ import { RagModule } from "./rag/rag.module";
 import { RecommendationsModule } from "./recommendations/recommendations.module";
 import { InterviewReport } from "./reports/report.entity";
 import { ReportsModule } from "./reports/reports.module";
+import { UserSession } from "./users/user-session.entity";
+import { User } from "./users/user.entity";
+import { UsersModule } from "./users/users.module";
 
 @Module({
   imports: [
@@ -31,7 +37,7 @@ import { ReportsModule } from "./reports/reports.module";
       autoLoadEntities: true,
       synchronize: false
     }),
-    TypeOrmModule.forFeature([Position, Question, KnowledgeSnippet, InterviewSession, InterviewTurn, InterviewReport]),
+    TypeOrmModule.forFeature([Position, Question, KnowledgeSnippet, InterviewSession, InterviewTurn, InterviewReport, User, UserSession, Discussion]),
     AudioModule,
     KnowledgeModule,
     LlmModule,
@@ -40,9 +46,11 @@ import { ReportsModule } from "./reports/reports.module";
     RagModule,
     ReportsModule,
     InterviewsModule,
-    RecommendationsModule
+    RecommendationsModule,
+    DiscussionsModule,
+    UsersModule
   ],
   controllers: [AppController],
-  providers: [AppService, MvpSeedService]
+  providers: [AppService, MvpSeedService, SchemaUpgradeService]
 })
 export class AppModule {}

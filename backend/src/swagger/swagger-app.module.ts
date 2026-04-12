@@ -3,6 +3,8 @@ import { AppController } from "../app.controller";
 import { AppService } from "../app.service";
 import { AudioController } from "../audio/audio.controller";
 import { AudioService } from "../audio/audio.service";
+import { DiscussionsController } from "../discussions/discussions.controller";
+import { DiscussionsService } from "../discussions/discussions.service";
 import { InterviewsController } from "../interviews/interviews.controller";
 import { InterviewsService } from "../interviews/interviews.service";
 import { KnowledgeController } from "../knowledge/knowledge.controller";
@@ -19,6 +21,8 @@ import { RecommendationsController } from "../recommendations/recommendations.co
 import { RecommendationsService } from "../recommendations/recommendations.service";
 import { ReportsController } from "../reports/reports.controller";
 import { ReportsService } from "../reports/reports.service";
+import { UsersController } from "../users/users.controller";
+import { UsersService } from "../users/users.service";
 
 const appServiceStub = {
   getHealth: () => ({
@@ -125,6 +129,31 @@ const ragServiceStub = {
   })
 } as unknown as RagService;
 
+const usersServiceStub = {
+  register: async () => ({
+    token: "token",
+    user: {}
+  }),
+  login: async () => ({
+    token: "token",
+    user: {}
+  }),
+  logout: async () => ({ success: true }),
+  getCurrentUser: async () => ({}),
+  updateCurrentUser: async () => ({})
+} as unknown as UsersService;
+
+const discussionsServiceStub = {
+  findPage: async () => ({
+    items: [],
+    page: 1,
+    pageSize: 6,
+    total: 0,
+    totalPages: 1
+  }),
+  create: async () => ({})
+} as unknown as DiscussionsService;
+
 @Module({
   controllers: [
     AppController,
@@ -136,7 +165,9 @@ const ragServiceStub = {
     ReportsController,
     RecommendationsController,
     LlmController,
-    RagController
+    RagController,
+    UsersController,
+    DiscussionsController
   ],
   providers: [
     {
@@ -178,6 +209,14 @@ const ragServiceStub = {
     {
       provide: RagService,
       useValue: ragServiceStub
+    },
+    {
+      provide: UsersService,
+      useValue: usersServiceStub
+    },
+    {
+      provide: DiscussionsService,
+      useValue: discussionsServiceStub
     }
   ]
 })
