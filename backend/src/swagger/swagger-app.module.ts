@@ -99,7 +99,24 @@ const interviewsServiceStub = {
 
 const reportsServiceStub = {
   findAll: async () => [],
-  findByInterview: async () => ({})
+  findByInterview: async () => ({}),
+  findSummary: async () => ({
+    candidateName: null,
+    positionId: null,
+    totalReports: 0,
+    averageOverallScore: null,
+    bestOverallScore: null,
+    latestOverallScore: null,
+    weakestDimensions: [],
+    strengthHighlights: [],
+    improvementHighlights: [],
+    learningPlan: [],
+    sourceBreakdown: {
+      llm: 0,
+      heuristic: 0
+    },
+    overview: ""
+  })
 } as unknown as ReportsService;
 
 const recommendationsServiceStub = {
@@ -116,6 +133,26 @@ const llmServiceStub = {
     embeddingModel: "text-embedding-3-small",
     baseUrl: "https://api.openai.com/v1",
     responseFormat: "json_object"
+  }),
+  runSelfCheck: async () => ({
+    ok: false,
+    timestamp: new Date().toISOString(),
+    checks: {
+      chat: {
+        ok: false,
+        durationMs: 0,
+        provider: "openai",
+        model: "gpt-4o-mini",
+        error: "not configured"
+      },
+      embedding: {
+        ok: false,
+        durationMs: 0,
+        provider: "openai",
+        model: "text-embedding-3-small",
+        error: "not configured"
+      }
+    }
   })
 } as LlmService;
 

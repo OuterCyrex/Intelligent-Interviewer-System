@@ -11,6 +11,16 @@ import { InterviewSession } from "../interviews/interview.entity";
 import { InterviewTurn } from "../interviews/interview-turn.entity";
 import { InterviewReport } from "./report.entity";
 
+interface ReportQueryOptions {
+  page?: number;
+  pageSize?: number;
+}
+
+interface ReportSummaryFilters {
+  candidateName?: string;
+  positionId?: string;
+}
+
 @Injectable()
 export class ReportsService {
   private readonly dimensionLabels: Record<ReportDimensionSummary["key"], string> = {
@@ -41,6 +51,30 @@ export class ReportsService {
     });
   }
 
+  async findPage(options: ReportQueryOptions = {}) {
+    const page = this.normalizePage(options.page);
+    const pageSize = this.normalizePageSize(options.pageSize);
+
+    const [items, total] = await this.reportsRepository.findAndCount({
+      relations: {
+        interview: true
+      },
+      order: {
+        createdAt: "DESC"
+      },
+      skip: (page - 1) * pageSize,
+      take: pageSize
+    });
+
+    return {
+      items,
+      page,
+      pageSize,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / pageSize))
+    };
+  }
+
   async findByInterview(interviewId: string) {
     const report = await this.reportsRepository.findOne({
       where: { interviewId },
@@ -62,6 +96,123 @@ export class ReportsService {
     }
 
     return this.generateForInterview(interviewId);
+  }
+
+  async findSummary(filters: ReportSummaryFilters = {}) {
+    const candidateName = (filters.candidateName ?? "").trim();
+    const positionId = (filters.positionId ?? "").trim();
+
+    const query = this.reportsRepository
+      .createQueryBuilder("report")
+      .leftJoinAndSelect("report.interview", "interview")
+      .orderBy("report.created_at", "DESC");
+
+    if (candidateName) {
+      query.andWhere("interview.candidate_name = :candidateName", { candidateName });
+    }
+    if (positionId) {
+      query.andWhere("interview.position_id = :positionId", { positionId });
+    }
+
+    const reports = await query.getMany();
+
+    if (!reports.length) {
+      return {
+        candidateName: candidateName || null,
+        positionId: positionId || null,
+        totalReports: 0,
+        averageOverallScore: null,
+        bestOverallScore: null,
+        latestOverallScore: null,
+        weakestDimensions: [],
+        strengthHighlights: [],
+        improvementHighlights: [],
+        learningPlan: [],
+        sourceBreakdown: {
+          llm: 0,
+          heuristic: 0
+        },
+        overview: "暂无可分析的报告数据。"
+      };
+    }
+
+    const average = (getter: (item: InterviewReport) => number) =>
+      Math.round(reports.reduce((sum, item) => sum + getter(item), 0) / reports.length);
+
+    const dimensionAverages = [
+      { key: "technical", label: "技术准确性", score: average((item) => item.technicalScore) },
+      { key: "communication", label: "表达沟通", score: average((item) => item.communicationScore) },
+      { key: "depth", label: "知识深度", score: average((item) => item.depthScore) },
+      { key: "roleFit", label: "岗位匹配度", score: average((item) => item.roleFitScore) }
+    ].sort((a, b) => a.score - b.score);
+
+    const improvementCounter = new Map<string, number>();
+    const strengthsCounter = new Map<string, number>();
+
+    for (const item of reports) {
+      for (const text of item.improvementAreas ?? []) {
+        const key = text.trim();
+        if (!key) {
+          continue;
+        }
+        improvementCounter.set(key, (improvementCounter.get(key) ?? 0) + 1);
+      }
+      for (const text of item.strengths ?? []) {
+        const key = text.trim();
+        if (!key) {
+          continue;
+        }
+        strengthsCounter.set(key, (strengthsCounter.get(key) ?? 0) + 1);
+      }
+    }
+
+    const improvementHighlights = [...improvementCounter.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([text]) => text);
+
+    const strengthHighlights = [...strengthsCounter.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([text]) => text);
+
+    const weakestDimensions = dimensionAverages.slice(0, 2);
+    const tips: Record<string, string> = {
+      technical: "按知识模块做专项复盘：概念、原理、边界条件、线上验证方式。",
+      communication: "统一采用“结论-细节-权衡”三段式表达，并控制单题回答节奏。",
+      depth: "每个项目准备追问链路：方案对比、风险点、监控指标、故障预案。",
+      roleFit: "把回答映射到目标岗位要求，补充与业务场景相关的实战案例。"
+    };
+
+    const sourceBreakdown = reports.reduce(
+      (acc, item) => {
+        if (item.generationSource === "llm") {
+          acc.llm += 1;
+        } else {
+          acc.heuristic += 1;
+        }
+        return acc;
+      },
+      { llm: 0, heuristic: 0 }
+    );
+
+    const scores = reports.map((item) => item.overallScore);
+    const latestOverallScore = reports[0]?.overallScore ?? null;
+
+    return {
+      candidateName: candidateName || reports[0]?.interview?.candidateName || null,
+      positionId: positionId || reports[0]?.interview?.positionId || null,
+      totalReports: reports.length,
+      averageOverallScore: average((item) => item.overallScore),
+      bestOverallScore: Math.max(...scores),
+      latestOverallScore,
+      weakestDimensions,
+      strengthHighlights,
+      improvementHighlights,
+      learningPlan: weakestDimensions.map((item) => tips[item.key]),
+      sourceBreakdown,
+      overview: `基于 ${reports.length} 份报告，当前最需要优先提升的是 ${weakestDimensions.map((item) => `${item.label}（均分 ${item.score}）`).join("、")}。建议先做短板专项，再进行整场模拟巩固。`
+    };
   }
 
   async generateForInterview(interviewId: string) {
@@ -235,6 +386,22 @@ export class ReportsService {
       label: this.dimensionLabels[key],
       score
     };
+  }
+
+  private normalizePage(page: number | undefined) {
+    const value = Number(page ?? 1);
+    if (!Number.isFinite(value) || value < 1) {
+      return 1;
+    }
+    return Math.floor(value);
+  }
+
+  private normalizePageSize(pageSize: number | undefined) {
+    const value = Number(pageSize ?? 10);
+    if (!Number.isFinite(value) || value < 1) {
+      return 10;
+    }
+    return Math.min(20, Math.floor(value));
   }
 
   private truncateText(value: string | null, limit: number) {

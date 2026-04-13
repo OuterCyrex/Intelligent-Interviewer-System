@@ -12,4 +12,10 @@ export class LlmController {
   getStatus() {
     return this.llmService.getStatus();
   }
+
+  @Get("self-check")
+  @ApiOperation({ summary: "Run LLM connectivity self-check for chat and embeddings" })
+  async selfCheck() {
+    return this.llmService.runSelfCheck();
+  }
 }

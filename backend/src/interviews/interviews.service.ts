@@ -158,7 +158,13 @@ export class InterviewsService {
     });
   }
 
-  async submitAnswer(interviewId: string, submitAnswerDto: SubmitInterviewAnswerDto) {
+  async submitAnswer(
+    interviewId: string,
+    submitAnswerDto: SubmitInterviewAnswerDto,
+    options?: {
+      onLlmTextDelta?: (delta: string) => void;
+    }
+  ) {
     const interview = await this.ensureInterview(interviewId);
     if (interview.status === "completed") {
       throw new BadRequestException("This interview is already completed.");
@@ -187,7 +193,8 @@ export class InterviewsService {
     const evaluatedAnswer = await this.interviewIntelligenceService.evaluateAnswer(
       interview,
       turn.question,
-      submitAnswerDto
+      submitAnswerDto,
+      options
     );
 
     turn.inputMode = evaluatedAnswer.inputMode;

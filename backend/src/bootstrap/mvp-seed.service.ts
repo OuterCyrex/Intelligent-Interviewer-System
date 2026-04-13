@@ -1,9 +1,12 @@
 import { Injectable, OnApplicationBootstrap } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
+import { scryptSync } from "crypto";
 import { Repository } from "typeorm";
+import { Discussion } from "../discussions/discussion.entity";
 import { KnowledgeSnippet } from "../knowledge/knowledge.entity";
 import { Position } from "../positions/position.entity";
 import { Question } from "../questions/question.entity";
+import { User } from "../users/user.entity";
 
 interface SeedPosition {
   slug: string;
@@ -34,6 +37,23 @@ interface SeedKnowledgeSnippet {
   content: string;
   tags: string[];
   difficulty: Question["difficulty"];
+}
+
+interface SeedUser {
+  account: string;
+  password: string;
+  userName: string;
+  city: string;
+  age: number;
+  targetRole: string;
+}
+
+interface SeedDiscussion {
+  account: string;
+  title: string;
+  content: string;
+  tag: string;
+  replyCount?: number;
 }
 
 const SEED_POSITIONS: SeedPosition[] = [
@@ -199,6 +219,86 @@ const SEED_KNOWLEDGE: SeedKnowledgeSnippet[] = [
   }
 ];
 
+const SEED_USERS: SeedUser[] = [
+  {
+    account: "alice_frontend",
+    password: "123456",
+    userName: "Alice",
+    city: "Shanghai",
+    age: 24,
+    targetRole: "前端开发工程师"
+  },
+  {
+    account: "bob_backend",
+    password: "123456",
+    userName: "Bob",
+    city: "Hangzhou",
+    age: 27,
+    targetRole: "后端开发工程师"
+  },
+  {
+    account: "cindy_fullstack",
+    password: "123456",
+    userName: "Cindy",
+    city: "Shenzhen",
+    age: 25,
+    targetRole: "全栈开发工程师"
+  },
+  {
+    account: "derek_testdev",
+    password: "123456",
+    userName: "Derek",
+    city: "Nanjing",
+    age: 26,
+    targetRole: "测试开发工程师"
+  }
+];
+
+const SEED_DISCUSSIONS: SeedDiscussion[] = [
+  {
+    account: "alice_frontend",
+    title: "浏览器渲染这题怎么讲更像真实项目？",
+    content:
+      "我现在会讲 DOM、CSSOM、Render Tree，但面试官总追问“你在项目里怎么落地”。大家会怎么把这题讲得更像真实排查过程？",
+    tag: "前端"
+  },
+  {
+    account: "bob_backend",
+    title: "缓存一致性答题模板（含线上兜底）",
+    content:
+      "我最近总结了一个答题框架：先讲主方案，再讲异常路径，最后讲监控和回滚。感觉比只讲延迟双删更完整，欢迎补充。",
+    tag: "后端"
+  },
+  {
+    account: "cindy_fullstack",
+    title: "项目深挖时，如何平衡“细节”与“表达速度”？",
+    content:
+      "我会先给结论，再拆方案权衡，最后补上线结果。这样不会被追问带跑偏，节奏也更稳。你们还有更好的结构吗？",
+    tag: "项目"
+  },
+  {
+    account: "derek_testdev",
+    title: "性能回归排查：你会先看哪里？",
+    content:
+      "我一般是先看发布变更，再看监控指标和核心链路。想请教下如果是前端首屏变慢，大家第一步通常怎么定位？",
+    tag: "性能"
+  },
+  {
+    account: "alice_frontend",
+    title: "面试复盘打卡：今天把回答改成三段式了",
+    content:
+      "今天练了 6 题，统一成“思路-细节-权衡”三段式，表达比之前顺很多。建议大家也试试，特别适合项目题。",
+    tag: "复盘"
+  },
+  {
+    account: "bob_backend",
+    title: "系统设计题里，监控指标到底要讲到多细？",
+    content:
+      "我现在会讲延迟、错误率、吞吐和资源占用，再补告警阈值和应急动作。还差哪些指标更容易打动面试官？",
+    tag: "系统设计"
+  }
+];
+
 @Injectable()
 export class MvpSeedService implements OnApplicationBootstrap {
   constructor(
@@ -207,7 +307,11 @@ export class MvpSeedService implements OnApplicationBootstrap {
     @InjectRepository(Question)
     private readonly questionsRepository: Repository<Question>,
     @InjectRepository(KnowledgeSnippet)
-    private readonly knowledgeRepository: Repository<KnowledgeSnippet>
+    private readonly knowledgeRepository: Repository<KnowledgeSnippet>,
+    @InjectRepository(User)
+    private readonly usersRepository: Repository<User>,
+    @InjectRepository(Discussion)
+    private readonly discussionsRepository: Repository<Discussion>
   ) {}
 
   async onApplicationBootstrap() {
@@ -225,6 +329,8 @@ export class MvpSeedService implements OnApplicationBootstrap {
       const positionMap = await this.seedPositions();
       await this.seedQuestions(positionMap);
       await this.seedKnowledge(positionMap);
+      const userMap = await this.seedUsers();
+      await this.seedDiscussions(userMap);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.warn(`MVP seed failed: ${message}`);
@@ -306,5 +412,86 @@ export class MvpSeedService implements OnApplicationBootstrap {
 
       await this.knowledgeRepository.save(snippet);
     }
+  }
+
+  private async seedUsers() {
+    const userMap = new Map<string, User>();
+
+    for (const seedUser of SEED_USERS) {
+      let user = await this.usersRepository.findOneBy({ account: seedUser.account });
+
+      if (!user) {
+        user = this.usersRepository.create({
+          account: seedUser.account,
+          passwordHash: this.hashSeedPassword(seedUser.account, seedUser.password),
+          userName: seedUser.userName,
+          city: seedUser.city,
+          age: seedUser.age,
+          targetRole: seedUser.targetRole
+        });
+      } else {
+        Object.assign(user, {
+          passwordHash: this.hashSeedPassword(seedUser.account, seedUser.password),
+          userName: seedUser.userName,
+          city: seedUser.city,
+          age: seedUser.age,
+          targetRole: seedUser.targetRole
+        });
+      }
+
+      const savedUser = await this.usersRepository.save(user);
+      userMap.set(seedUser.account, savedUser);
+    }
+
+    return userMap;
+  }
+
+  private async seedDiscussions(userMap: Map<string, User>) {
+    for (const seedDiscussion of SEED_DISCUSSIONS) {
+      const user = userMap.get(seedDiscussion.account);
+      if (!user) {
+        continue;
+      }
+
+      let discussion = await this.discussionsRepository.findOneBy({
+        userId: user.id,
+        title: seedDiscussion.title
+      });
+
+      const summary =
+        seedDiscussion.content.length > 80
+          ? `${seedDiscussion.content.slice(0, 80)}...`
+          : seedDiscussion.content;
+
+      if (!discussion) {
+        discussion = this.discussionsRepository.create({
+          title: seedDiscussion.title,
+          content: seedDiscussion.content,
+          summary,
+          userId: user.id,
+          authorAccount: user.account,
+          authorName: user.userName,
+          tag: seedDiscussion.tag,
+          replyCount: seedDiscussion.replyCount ?? 0
+        });
+      } else {
+        Object.assign(discussion, {
+          content: seedDiscussion.content,
+          summary,
+          authorAccount: user.account,
+          authorName: user.userName,
+          tag: seedDiscussion.tag,
+          replyCount: seedDiscussion.replyCount ?? discussion.replyCount ?? 0
+        });
+      }
+
+      await this.discussionsRepository.save(discussion);
+    }
+  }
+
+  private hashSeedPassword(account: string, password: string) {
+    const salt = `seed-${account}`;
+    const hash = scryptSync(password, salt, 64).toString("hex");
+    return `scrypt$${salt}$${hash}`;
   }
 }

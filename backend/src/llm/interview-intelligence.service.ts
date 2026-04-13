@@ -18,6 +18,10 @@ interface LlmInterviewEvaluationPayload {
     depth?: number;
     roleFit?: number;
   };
+  technicalScore?: number;
+  communicationScore?: number;
+  depthScore?: number;
+  roleFitScore?: number;
   overallScore?: number;
   evaluationSummary?: string;
   needsFollowUp?: boolean;
@@ -29,6 +33,10 @@ const INTERVIEW_EVALUATION_SCHEMA = {
   type: "object",
   additionalProperties: false,
   properties: {
+    evaluationSummary: { type: "string" },
+    followUpPrompt: { type: ["string", "null"] },
+    followUpReason: { type: ["string", "null"] },
+    needsFollowUp: { type: "boolean" },
     keywordHits: {
       type: "array",
       items: { type: "string" }
@@ -48,21 +56,17 @@ const INTERVIEW_EVALUATION_SCHEMA = {
       },
       required: ["technical", "communication", "depth", "roleFit"]
     },
-    overallScore: { type: "integer", minimum: 0, maximum: 100 },
-    evaluationSummary: { type: "string" },
-    needsFollowUp: { type: "boolean" },
-    followUpReason: { type: ["string", "null"] },
-    followUpPrompt: { type: ["string", "null"] }
+    overallScore: { type: "integer", minimum: 0, maximum: 100 }
   },
   required: [
+    "evaluationSummary",
+    "followUpPrompt",
+    "followUpReason",
+    "needsFollowUp",
     "keywordHits",
     "missedKeywords",
     "scores",
-    "overallScore",
-    "evaluationSummary",
-    "needsFollowUp",
-    "followUpReason",
-    "followUpPrompt"
+    "overallScore"
   ]
 } satisfies Record<string, unknown>;
 
@@ -77,7 +81,10 @@ export class InterviewIntelligenceService {
   async evaluateAnswer(
     interview: InterviewSession,
     question: Question,
-    submitAnswerDto: SubmitInterviewAnswerDto
+    submitAnswerDto: SubmitInterviewAnswerDto,
+    options?: {
+      onLlmTextDelta?: (delta: string) => void;
+    }
   ): Promise<InterviewEvaluationResult> {
     const rawAnswer = submitAnswerDto.answerText?.trim() || submitAnswerDto.transcript?.trim() || "";
     if (!rawAnswer) {
@@ -121,7 +128,7 @@ export class InterviewIntelligenceService {
 
     if (this.llmService.isReady()) {
       try {
-        return await this.evaluateWithLlm(request);
+        return await this.evaluateWithLlm(request, options);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         console.warn(`LLM evaluation failed, falling back to heuristics: ${message}`);
@@ -131,7 +138,12 @@ export class InterviewIntelligenceService {
     return this.evaluateHeuristically(request);
   }
 
-  private async evaluateWithLlm(request: InterviewEvaluationRequest): Promise<InterviewEvaluationResult> {
+  private async evaluateWithLlm(
+    request: InterviewEvaluationRequest,
+    options?: {
+      onLlmTextDelta?: (delta: string) => void;
+    }
+  ): Promise<InterviewEvaluationResult> {
     const normalizedAnswer = (request.processedSpeech?.normalizedTranscript ?? request.rawAnswer).replace(/\s+/g, " ");
     const llmResponse = await this.llmService.createJsonCompletion<LlmInterviewEvaluationPayload>({
       schemaName: "interview_answer_evaluation",
@@ -165,7 +177,8 @@ export class InterviewIntelligenceService {
           score: item.score
         }))
       },
-      jsonSchema: INTERVIEW_EVALUATION_SCHEMA
+      jsonSchema: INTERVIEW_EVALUATION_SCHEMA,
+      onTextDelta: options?.onLlmTextDelta
     });
 
     return this.normalizeLlmResult(request, llmResponse.content, llmResponse.provider, llmResponse.model);
@@ -183,14 +196,28 @@ export class InterviewIntelligenceService {
       (payload.keywordHits ?? []).filter((keyword) => allowedKeywords.has(keyword))
     );
     const missedKeywords = request.question.expectedKeywords.filter((keyword) => !keywordHits.includes(keyword));
-    const technical = this.clampScore(payload.scores?.technical ?? 0);
-    const communication = this.clampScore(payload.scores?.communication ?? 0);
-    const depth = this.clampScore(payload.scores?.depth ?? 0);
-    const roleFit = this.clampScore(payload.scores?.roleFit ?? 0);
-    const overallScore = this.clampScore(
-      payload.overallScore ??
+    let technical = this.clampScore(this.toScore(payload.scores?.technical ?? payload.technicalScore) ?? 0);
+    let communication = this.clampScore(
+      this.toScore(payload.scores?.communication ?? payload.communicationScore) ?? 0
+    );
+    let depth = this.clampScore(this.toScore(payload.scores?.depth ?? payload.depthScore) ?? 0);
+    let roleFit = this.clampScore(this.toScore(payload.scores?.roleFit ?? payload.roleFitScore) ?? 0);
+    let overallScore = this.clampScore(
+      this.toScore(payload.overallScore) ??
         Math.round(technical * 0.35 + communication * 0.2 + depth * 0.25 + roleFit * 0.2)
     );
+
+    // Some compatible gateways may return partial score fields; avoid collapsing to all-zero scores.
+    const answerWordCount = normalizedAnswer.split(/\s+/).filter(Boolean).length;
+    const allZero = technical === 0 && communication === 0 && depth === 0 && roleFit === 0 && overallScore === 0;
+    if (allZero && (keywordHits.length > 0 || answerWordCount >= 20)) {
+      const heuristic = this.evaluateHeuristically(request);
+      technical = heuristic.scores.technical;
+      communication = heuristic.scores.communication;
+      depth = heuristic.scores.depth;
+      roleFit = heuristic.scores.roleFit;
+      overallScore = heuristic.overallScore;
+    }
     const needsFollowUp = Boolean(payload.needsFollowUp);
     const followUpReason = needsFollowUp ? payload.followUpReason?.trim() || null : null;
     const followUpPrompt = needsFollowUp ? payload.followUpPrompt?.trim() || null : null;
@@ -390,6 +417,19 @@ export class InterviewIntelligenceService {
 
   private unique(values: string[]) {
     return Array.from(new Set(values));
+  }
+
+  private toScore(value: unknown) {
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return value;
+    }
+    if (typeof value === "string" && value.trim()) {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+    return null;
   }
 
   private async loadRetrievalContext(positionId: string, question: Question, rawAnswer: string) {
