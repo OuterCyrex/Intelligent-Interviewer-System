@@ -1,16 +1,16 @@
 ﻿<template>
   <div class="min-h-screen bg-slate-100 text-slate-900 dark:bg-[#0f172a] dark:text-slate-100">
     <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800/70 dark:bg-[#0b1220]/95">
-      <div class="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
+      <div class="flex w-full items-center justify-between gap-4 px-3 py-4 lg:px-6">
         <div class="flex items-center gap-3">
           <div class="h-9 w-9 rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-400"></div>
           <div>
-            <p class="text-[11px] uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-300">Intervene Studio</p>
-            <h1 class="text-xl font-semibold">求职训练平台</h1>
+            <p class="text-[11px] uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-300">AI Interview Coach</p>
+            <h1 class="text-xl font-semibold">AI模拟面试与能力提升软件</h1>
           </div>
         </div>
 
-        <div class="flex w-full flex-col gap-3 lg:w-auto lg:flex-row lg:items-center">
+        <div class="flex flex-wrap items-center justify-end gap-3">
           <nav class="flex flex-wrap items-center gap-2 text-sm">
             <RouterLink to="/home" class="rounded-lg px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800" active-class="bg-slate-200 text-emerald-700 dark:bg-slate-800 dark:text-emerald-300">主页</RouterLink>
             <RouterLink to="/dashboard" class="rounded-lg px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800" active-class="bg-slate-200 text-emerald-700 dark:bg-slate-800 dark:text-emerald-300">面试</RouterLink>

@@ -88,7 +88,7 @@ export class InterviewIntelligenceService {
   ): Promise<InterviewEvaluationResult> {
     const rawAnswer = submitAnswerDto.answerText?.trim() || submitAnswerDto.transcript?.trim() || "";
     if (!rawAnswer) {
-      throw new BadRequestException("An answerText or transcript is required.");
+      throw new BadRequestException("必须提供 answerText 或 transcript。");
     }
 
     const processedSpeech =
@@ -131,7 +131,7 @@ export class InterviewIntelligenceService {
         return await this.evaluateWithLlm(request, options);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        console.warn(`LLM evaluation failed, falling back to heuristics: ${message}`);
+        console.warn(`LLM 评估失败，回退到启发式评估：${message}`);
       }
     }
 
@@ -148,16 +148,16 @@ export class InterviewIntelligenceService {
     const llmResponse = await this.llmService.createJsonCompletion<LlmInterviewEvaluationPayload>({
       schemaName: "interview_answer_evaluation",
       systemPrompt: [
-        "You are evaluating a mock interview answer for a computer-science interview backend.",
-        "Return JSON only.",
-        "Score four dimensions from 0 to 100 as integers: technical, communication, depth, roleFit.",
-        "Only mark keywordHits from the provided expectedKeywords list.",
-        "Be conservative and grounded in the provided answer.",
-        "Use retrievalContext only as reference knowledge for judging completeness and producing a follow-up.",
-        "Do not give credit for facts that appear only in retrievalContext and not in the candidate answer.",
-        "Set needsFollowUp to true only when the answer is shallow, incomplete, uncertain, or misses key concepts.",
-        "If needsFollowUp is false, set followUpReason and followUpPrompt to null.",
-        "evaluationSummary should be one concise sentence."
+        "你正在评估一段面向计算机科学面试后端场景的模拟面试回答。",
+        "只返回 JSON。",
+        "对 technical、communication、depth、roleFit 四个维度按 0 到 100 的整数打分。",
+        "keywordHits 只能从给定的 expectedKeywords 列表中标注。",
+        "评估要保守，并严格基于候选人的作答内容。",
+        "retrievalContext 仅可作为判断完整度和生成追问时的参考知识。",
+        "仅出现在 retrievalContext 而未出现在候选人回答中的事实不得加分。",
+        "只有当回答浅显、不完整、不确定或遗漏关键概念时，needsFollowUp 才设为 true。",
+        "如果 needsFollowUp 为 false，followUpReason 和 followUpPrompt 必须为 null。",
+        "evaluationSummary 需要是一句简洁总结。"
       ].join(" "),
       userPayload: {
         position: request.interview.position,
@@ -207,7 +207,7 @@ export class InterviewIntelligenceService {
         Math.round(technical * 0.35 + communication * 0.2 + depth * 0.25 + roleFit * 0.2)
     );
 
-    // Some compatible gateways may return partial score fields; avoid collapsing to all-zero scores.
+    // 某些兼容网关可能只返回部分分数字段；避免因此退化为全 0 分。
     const answerWordCount = normalizedAnswer.split(/\s+/).filter(Boolean).length;
     const allZero = technical === 0 && communication === 0 && depth === 0 && roleFit === 0 && overallScore === 0;
     if (allZero && (keywordHits.length > 0 || answerWordCount >= 20)) {
@@ -237,7 +237,7 @@ export class InterviewIntelligenceService {
       overallScore,
       evaluationSummary:
         payload.evaluationSummary?.trim() ||
-        `Estimated ${overallScore}/100 with ${keywordHits.length}/${request.question.expectedKeywords.length || 1} target keywords covered.`,
+        `预估得分 ${overallScore}/100，命中目标关键词 ${keywordHits.length}/${request.question.expectedKeywords.length || 1} 个。`,
       needsFollowUp,
       followUpReason,
       followUpPrompt,
@@ -265,33 +265,32 @@ export class InterviewIntelligenceService {
         ? Math.round((keywordHits.length / request.question.expectedKeywords.length) * 100)
         : Math.min(100, lengthScore);
     const depthSignals = this.countMatches(lowerAnswer, [
-      "because",
-      "trade-off",
-      "tradeoff",
-      "for example",
-      "first",
-      "then",
-      "finally",
-      "monitor",
-      "fallback",
-      "consistency",
-      "latency",
-      "rollback"
+      "因为",
+      "权衡",
+      "例如",
+      "首先",
+      "然后",
+      "最后",
+      "监控",
+      "兜底",
+      "一致性",
+      "延迟",
+      "回滚"
     ]);
     const structureSignals = this.countMatches(lowerAnswer, [
-      "first",
-      "second",
-      "third",
-      "then",
-      "finally",
-      "because"
+      "首先",
+      "其次",
+      "再次",
+      "然后",
+      "最后",
+      "因为"
     ]);
     const uncertaintySignals = this.countMatches(lowerAnswer, [
-      "not sure",
-      "don't know",
-      "maybe",
-      "probably",
-      "kind of"
+      "不太确定",
+      "不知道",
+      "可能",
+      "大概",
+      "有点"
     ]);
     const roleSignals = [
       ...request.interview.position.highlights,
@@ -348,7 +347,7 @@ export class InterviewIntelligenceService {
         roleFit
       },
       overallScore,
-      evaluationSummary: `Covered ${keywordHits.length}/${request.question.expectedKeywords.length || 1} target keywords with an estimated ${overallScore}/100 quality score.`,
+      evaluationSummary: `命中目标关键词 ${keywordHits.length}/${request.question.expectedKeywords.length || 1} 个，预估质量得分 ${overallScore}/100。`,
       needsFollowUp,
       followUpReason,
       followUpPrompt,
@@ -366,15 +365,15 @@ export class InterviewIntelligenceService {
     uncertaintySignals: number
   ) {
     if (missedKeywords.length > 0) {
-      return `Missing core concepts: ${missedKeywords.slice(0, 3).join(", ")}.`;
+      return `缺少核心概念：${missedKeywords.slice(0, 3).join("、")}。`;
     }
     if (wordCount < targetWordCount) {
-      return "The answer is too short for a realistic interview response.";
+      return "回答过短，不符合真实面试场景下的完整作答要求。";
     }
     if (uncertaintySignals > 0) {
-      return "The answer included uncertainty language and needs clearer reasoning.";
+      return "回答中存在不确定表达，推理过程需要更清晰。";
     }
-    return "The answer needs more detail and stronger trade-off analysis.";
+    return "回答需要更多细节，并加强方案权衡分析。";
   }
 
   private buildFollowUpPrompt(
@@ -384,15 +383,15 @@ export class InterviewIntelligenceService {
     targetWordCount: number
   ) {
     if (missedKeywords.length > 0) {
-      return `Go deeper on ${missedKeywords.slice(0, 2).join(" and ")}. Walk me through your reasoning, trade-offs, and how you would verify the result in production.`;
+      return `请进一步展开 ${missedKeywords.slice(0, 2).join(" 和 ")}，并说明你的推理过程、方案权衡，以及如何在生产环境中验证结果。`;
     }
     if (wordCount < targetWordCount && followUpHints.length > 0) {
-      return `Please expand your answer and specifically cover ${followUpHints[0]}.`;
+      return `请补充扩展你的回答，并重点覆盖 ${followUpHints[0]}。`;
     }
     if (followUpHints.length > 0) {
-      return `Continue by covering ${followUpHints.slice(0, 2).join(" and ")} in more detail.`;
+      return `请继续作答，并更详细地说明 ${followUpHints.slice(0, 2).join(" 和 ")}。`;
     }
-    return "Expand your answer with the implementation details, edge cases, and trade-offs you would bring up in a real interview.";
+    return "请补充实现细节、边界情况，以及你在真实面试中会提到的方案权衡。";
   }
 
   private countMatches(text: string, terms: string[]) {
@@ -445,7 +444,7 @@ export class InterviewIntelligenceService {
       return retrieval.matches;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      console.warn(`RAG retrieval failed during interview evaluation: ${message}`);
+      console.warn(`面试评估阶段的 RAG 检索失败：${message}`);
       return [];
     }
   }

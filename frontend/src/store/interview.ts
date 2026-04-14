@@ -1,6 +1,12 @@
 ﻿import { computed, ref } from "vue";
 import { defineStore } from "pinia";
-import { fetchPositionKnowledge, fetchPositionQuestions } from "../api/content";
+import { transcribeAudioFile } from "../api/audio";
+import {
+  fetchAllKnowledge,
+  fetchAllQuestions,
+  fetchPositionKnowledge,
+  fetchPositionQuestions
+} from "../api/content";
 import {
   completeInterview,
   createInterview,
@@ -21,7 +27,9 @@ import type {
   Position,
   Question,
   Recommendations,
-  Report
+  Report,
+  SpeechMetrics,
+  SpeechTranscriptionSegment
 } from "../types/domain";
 import { parseCommaSeparatedInput } from "../utils/text";
 
@@ -32,6 +40,8 @@ export const useInterviewStore = defineStore("interview", () => {
   const selectedPositionId = ref("");
   const questions = ref<Question[]>([]);
   const knowledge = ref<KnowledgeItem[]>([]);
+  const totalQuestions = ref(0);
+  const totalKnowledge = ref(0);
 
   const candidateName = ref("Alice");
   const mode = ref<InterviewMode>("text");
@@ -44,6 +54,11 @@ export const useInterviewStore = defineStore("interview", () => {
   const answerText = ref("");
   const transcript = ref("");
   const durationSeconds = ref<number | null>(null);
+  const speechMetrics = ref<SpeechMetrics | null>(null);
+  const transcriptionSegments = ref<SpeechTranscriptionSegment[]>([]);
+  const transcriptionLanguage = ref<string | null>(null);
+  const sttProvider = ref("");
+  const sttModel = ref("");
   const lastEvaluation = ref<InterviewTurn | null>(null);
 
   const report = ref<Report | null>(null);
@@ -52,6 +67,7 @@ export const useInterviewStore = defineStore("interview", () => {
 
   const creatingInterview = ref(false);
   const submittingAnswer = ref(false);
+  const transcribingAudio = ref(false);
   const completingInterview = ref(false);
   const loadingPositions = ref(false);
   const loadingAssets = ref(false);
@@ -60,6 +76,9 @@ export const useInterviewStore = defineStore("interview", () => {
   const loadingOverview = ref(false);
 
   const hasInterview = computed(() => Boolean(currentInterview.value));
+  const canSubmitAnswer = computed(() =>
+    Boolean(activeTurn.value && (answerText.value.trim() || transcript.value.trim()))
+  );
 
   function clearError() {
     errorMessage.value = "";
@@ -67,6 +86,21 @@ export const useInterviewStore = defineStore("interview", () => {
 
   function setError(error: unknown) {
     errorMessage.value = error instanceof Error ? error.message : String(error);
+  }
+
+  function resetSpeechDraft() {
+    transcript.value = "";
+    durationSeconds.value = null;
+    speechMetrics.value = null;
+    transcriptionSegments.value = [];
+    transcriptionLanguage.value = null;
+    sttProvider.value = "";
+    sttModel.value = "";
+  }
+
+  function clearAnswerDraft() {
+    answerText.value = "";
+    resetSpeechDraft();
   }
 
   async function loadPositionsAction(baseUrl: string) {
@@ -88,16 +122,24 @@ export const useInterviewStore = defineStore("interview", () => {
   }
 
   async function loadPositionAssetsAction(baseUrl: string) {
-    if (!selectedPositionId.value) {
-      questions.value = [];
-      knowledge.value = [];
-      return;
-    }
-
     loadingAssets.value = true;
     clearError();
 
     try {
+      const [allQuestionData, allKnowledgeData] = await Promise.all([
+        fetchAllQuestions(baseUrl),
+        fetchAllKnowledge(baseUrl)
+      ]);
+
+      totalQuestions.value = allQuestionData.length;
+      totalKnowledge.value = allKnowledgeData.length;
+
+      if (!selectedPositionId.value) {
+        questions.value = [];
+        knowledge.value = [];
+        return;
+      }
+
       const [questionData, knowledgeData] = await Promise.all([
         fetchPositionQuestions(baseUrl, selectedPositionId.value),
         fetchPositionKnowledge(baseUrl, selectedPositionId.value)
@@ -123,7 +165,6 @@ export const useInterviewStore = defineStore("interview", () => {
       const payload: CreateInterviewPayload = {
         positionId: selectedPositionId.value,
         candidateName: candidateName.value.trim(),
-        mode: mode.value,
         targetQuestionCount: targetQuestionCount.value
       };
 
@@ -143,13 +184,49 @@ export const useInterviewStore = defineStore("interview", () => {
       recommendations.value = null;
       overview.value = null;
       lastEvaluation.value = null;
-      answerText.value = "";
-      transcript.value = "";
-      durationSeconds.value = null;
+      clearAnswerDraft();
     } catch (error) {
       setError(error);
     } finally {
       creatingInterview.value = false;
+    }
+  }
+
+  async function transcribeAudioFileAction(
+    baseUrl: string,
+    file: File,
+    options?: {
+      language?: string;
+      prompt?: string;
+      temperature?: number;
+    }
+  ) {
+    transcribingAudio.value = true;
+    clearError();
+
+    try {
+      const result = await transcribeAudioFile(baseUrl, {
+        file,
+        language: options?.language ?? "zh",
+        prompt: options?.prompt,
+        temperature: options?.temperature
+      });
+
+      transcript.value = result.transcript;
+      answerText.value = result.normalizedTranscript;
+      durationSeconds.value = result.metrics.durationSeconds;
+      speechMetrics.value = result.metrics;
+      transcriptionSegments.value = result.segments;
+      transcriptionLanguage.value = result.language;
+      sttProvider.value = result.sttProvider;
+      sttModel.value = result.sttModel;
+
+      return result;
+    } catch (error) {
+      setError(error);
+      return null;
+    } finally {
+      transcribingAudio.value = false;
     }
   }
 
@@ -170,7 +247,7 @@ export const useInterviewStore = defineStore("interview", () => {
   }
 
   async function submitAnswerAction(baseUrl: string) {
-    if (!currentInterview.value || !activeTurn.value || !answerText.value.trim()) {
+    if (!currentInterview.value || !activeTurn.value || (!answerText.value.trim() && !transcript.value.trim())) {
       return;
     }
 
@@ -180,19 +257,33 @@ export const useInterviewStore = defineStore("interview", () => {
     try {
       const payload: {
         turnId: string;
-        answerText: string;
+        answerText?: string;
         transcript?: string;
-        speechMetrics?: { durationSeconds?: number };
+        speechMetrics?: Partial<SpeechMetrics>;
       } = {
-        turnId: activeTurn.value.id,
-        answerText: answerText.value.trim()
+        turnId: activeTurn.value.id
       };
+
+      if (answerText.value.trim()) {
+        payload.answerText = answerText.value.trim();
+      }
 
       if (transcript.value.trim()) {
         payload.transcript = transcript.value.trim();
       }
 
-      if (durationSeconds.value && durationSeconds.value > 0) {
+      if (speechMetrics.value) {
+        payload.speechMetrics = {
+          durationSeconds: speechMetrics.value.durationSeconds ?? durationSeconds.value ?? undefined,
+          fillerWordCount: speechMetrics.value.fillerWordCount,
+          averageConfidence: speechMetrics.value.averageConfidence ?? undefined,
+          averagePauseMs: speechMetrics.value.averagePauseMs ?? undefined,
+          paceWpm: speechMetrics.value.paceWpm ?? undefined,
+          fillerRate: speechMetrics.value.fillerRate,
+          clarityScore: speechMetrics.value.clarityScore,
+          flags: speechMetrics.value.flags
+        };
+      } else if (durationSeconds.value && durationSeconds.value > 0) {
         payload.speechMetrics = {
           durationSeconds: durationSeconds.value
         };
@@ -202,9 +293,7 @@ export const useInterviewStore = defineStore("interview", () => {
       lastEvaluation.value = result.answeredTurn;
       currentInterview.value = result.interview;
       activeTurn.value = result.interview.activeTurn ?? null;
-      answerText.value = "";
-      transcript.value = "";
-      durationSeconds.value = null;
+      clearAnswerDraft();
 
       if (result.interview.status === "completed") {
         await Promise.all([
@@ -311,6 +400,8 @@ export const useInterviewStore = defineStore("interview", () => {
     selectedPositionId,
     questions,
     knowledge,
+    totalQuestions,
+    totalKnowledge,
     candidateName,
     mode,
     difficulty,
@@ -321,12 +412,18 @@ export const useInterviewStore = defineStore("interview", () => {
     answerText,
     transcript,
     durationSeconds,
+    speechMetrics,
+    transcriptionSegments,
+    transcriptionLanguage,
+    sttProvider,
+    sttModel,
     lastEvaluation,
     report,
     recommendations,
     overview,
     creatingInterview,
     submittingAnswer,
+    transcribingAudio,
     completingInterview,
     loadingPositions,
     loadingAssets,
@@ -334,15 +431,18 @@ export const useInterviewStore = defineStore("interview", () => {
     loadingRecommendations,
     loadingOverview,
     hasInterview,
+    canSubmitAnswer,
     initialize,
     loadPositionsAction,
     loadPositionAssetsAction,
     createInterviewAction,
+    transcribeAudioFileAction,
     refreshInterviewAction,
     submitAnswerAction,
     completeInterviewAction,
     loadReportAction,
     loadRecommendationsAction,
-    loadOverviewAction
+    loadOverviewAction,
+    resetSpeechDraft
   };
 });

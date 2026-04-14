@@ -512,8 +512,7 @@ export class MvpSeedService implements OnApplicationBootstrap {
           summary,
           authorAccount: user.account,
           authorName: user.userName,
-          tag: seedDiscussion.tag,
-          replyCount: 0
+          tag: seedDiscussion.tag
         });
       }
 

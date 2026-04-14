@@ -8,3 +8,11 @@ export function fetchPositionQuestions(baseUrl: string, positionId: string) {
 export function fetchPositionKnowledge(baseUrl: string, positionId: string) {
   return requestJson<KnowledgeItem[]>(baseUrl, `/positions/${positionId}/knowledge`);
 }
+
+export function fetchAllQuestions(baseUrl: string) {
+  return requestJson<Question[]>(baseUrl, "/questions");
+}
+
+export function fetchAllKnowledge(baseUrl: string) {
+  return requestJson<KnowledgeItem[]>(baseUrl, "/knowledge");
+}

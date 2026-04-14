@@ -1,10 +1,10 @@
-﻿import type { Difficulty, InterviewMode, InterviewView } from "../types/domain";
+﻿import type { Difficulty, InterviewMode, InterviewTurn, InterviewView, SpeechMetrics } from "../types/domain";
 import { requestJson } from "../utils/request";
 
 export interface CreateInterviewPayload {
   positionId: string;
   candidateName: string;
-  mode: InterviewMode;
+  mode?: InterviewMode;
   difficulty?: Difficulty;
   targetQuestionCount: number;
   focusAreas?: string[];
@@ -12,20 +12,13 @@ export interface CreateInterviewPayload {
 
 export interface SubmitAnswerPayload {
   turnId: string;
-  answerText: string;
+  answerText?: string;
   transcript?: string;
-  speechMetrics?: {
-    durationSeconds?: number;
-  };
+  speechMetrics?: Partial<SpeechMetrics>;
 }
 
 export interface SubmitAnswerResponse {
-  answeredTurn: {
-    id: string;
-    evaluationSummary?: string;
-    overallScore?: number;
-    evaluationSource?: "heuristic" | "llm";
-  };
+  answeredTurn: InterviewTurn;
   interview: InterviewView;
 }
 

@@ -83,6 +83,10 @@ export class SchemaUpgradeService implements OnApplicationBootstrap {
       `);
 
       await this.dataSource.query(`
+        ALTER TABLE discussions ADD COLUMN IF NOT EXISTS reply_count integer NOT NULL DEFAULT 0;
+      `);
+
+      await this.dataSource.query(`
         CREATE INDEX IF NOT EXISTS idx_discussions_created_at ON discussions(created_at DESC);
       `);
 

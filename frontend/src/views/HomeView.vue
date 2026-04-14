@@ -8,7 +8,7 @@
         <div>
           <div class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/80 px-3 py-1 text-xs font-medium text-emerald-700 shadow-sm dark:border-emerald-700/60 dark:bg-emerald-900/30 dark:text-emerald-200">
             <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
-            Interview Intelligence Console
+            AI Interview Coach
           </div>
 
           <h2 class="mt-4 text-3xl font-bold leading-tight text-slate-900 lg:text-4xl dark:text-white">
@@ -65,13 +65,6 @@
       <article class="rounded-2xl border border-emerald-200 bg-slate-950 p-6 text-white shadow-[0_20px_45px_-35px_rgba(6,78,59,0.9)]">
         <div class="flex items-center justify-between gap-3">
           <p class="text-xs uppercase tracking-[0.18em] text-emerald-100/70">今日报告</p>
-          <button
-            class="rounded-lg border border-white/15 bg-white/10 px-3 py-1 text-xs font-medium text-white/90 transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
-            :disabled="loadingReportInsights"
-            @click="loadReportInsights"
-          >
-            {{ loadingReportInsights ? "刷新中" : "刷新" }}
-          </button>
         </div>
 
         <div class="mt-5 flex items-end justify-between gap-4">
@@ -151,12 +144,6 @@
         <div class="min-h-[520px] rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_20px_45px_-35px_rgba(15,23,42,0.45)] dark:border-slate-800 dark:bg-slate-900 dark:shadow-none lg:sticky lg:top-24">
           <div class="mb-4 flex items-center justify-between">
             <h3 class="text-lg font-semibold">岗位推荐</h3>
-            <button
-              class="rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-600 transition hover:border-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
-              @click="refreshData"
-            >
-              刷新
-            </button>
           </div>
 
           <div class="space-y-3">
@@ -394,11 +381,6 @@ const reportHeatmapWeeks = computed(() => {
   }
   return weeks;
 });
-
-async function refreshData() {
-  await interviewStore.loadPositionsAction(apiBase.value);
-  await interviewStore.loadPositionAssetsAction(apiBase.value);
-}
 
 async function loadReportInsights() {
   loadingReportInsights.value = true;

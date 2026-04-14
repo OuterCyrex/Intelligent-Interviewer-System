@@ -4,9 +4,6 @@
       <div class="flex flex-wrap items-center justify-between gap-2">
         <h2 class="text-lg font-semibold">面试进行中</h2>
         <div class="flex gap-2" v-if="currentInterview">
-          <button class="rounded-lg border border-slate-700 px-3 py-1 text-sm hover:border-slate-500" @click="refreshInterview">
-            刷新状态
-          </button>
           <button
             class="rounded-lg border border-amber-500 px-3 py-1 text-sm text-amber-400 hover:bg-amber-500/10 disabled:opacity-50"
             :disabled="completingInterview"
@@ -36,39 +33,58 @@
         </div>
         <p v-else class="rounded-xl border border-slate-800 bg-slate-950 p-3 text-sm text-slate-400">当前无待回答题目。</p>
 
+        <div
+          v-if="submittingAnswer || isGeneratingReport"
+          class="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3"
+        >
+          <div class="flex items-center gap-3">
+            <span class="h-4 w-4 animate-spin rounded-full border-2 border-amber-400 border-t-transparent"></span>
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-medium text-amber-300">{{ pendingIndicatorLabel }}</p>
+              <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-800">
+                <div class="h-full w-2/3 animate-pulse rounded-full bg-amber-400"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="space-y-2">
           <label class="block text-sm text-slate-300">回答内容</label>
+          <div class="inline-flex rounded-xl border border-slate-700 bg-slate-950 p-1">
+            <button
+              class="rounded-lg px-3 py-1.5 text-sm transition"
+              :class="mode === 'text'
+                ? 'bg-slate-800 text-white'
+                : 'text-slate-400 hover:text-slate-200'"
+              @click="mode = 'text'"
+            >
+              文字输入
+            </button>
+            <button
+              class="rounded-lg px-3 py-1.5 text-sm transition"
+              :class="mode === 'speech'
+                ? 'bg-slate-800 text-white'
+                : 'text-slate-400 hover:text-slate-200'"
+              @click="mode = 'speech'"
+            >
+              语音输入
+            </button>
+          </div>
           <textarea
             v-model="answerText"
             rows="6"
+            :readonly="mode === 'speech'"
             class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-amber-400"
-            placeholder="输入你的回答"
+            :placeholder="mode === 'speech' ? '语音模式下将自动转写并提交。' : '输入你的回答'"
           />
         </div>
 
-        <div class="grid gap-2 sm:grid-cols-2">
-          <div>
-            <label class="mb-1 block text-sm text-slate-300">转写文本（可选）</label>
-            <input
-              v-model="transcript"
-              type="text"
-              class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-amber-400"
-            />
-          </div>
-          <div>
-            <label class="mb-1 block text-sm text-slate-300">语音时长秒数（可选）</label>
-            <input
-              v-model.number="durationSeconds"
-              type="number"
-              min="1"
-              class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-amber-400"
-            />
-          </div>
-        </div>
+        <SpeechAnswerPanel v-if="mode === 'speech'" />
 
         <button
+          v-if="mode === 'text'"
           class="w-full rounded-lg bg-amber-500 px-4 py-2 font-semibold text-slate-950 hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
-          :disabled="submittingAnswer || !activeTurn || !answerText.trim()"
+          :disabled="submittingAnswer || !activeTurn || !canSubmitAnswer"
           @click="submitAnswer"
         >
           {{ submittingAnswer ? "提交中..." : "提交回答" }}
@@ -94,7 +110,9 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import { storeToRefs } from "pinia";
+import SpeechAnswerPanel from "../components/SpeechAnswerPanel.vue";
 import { useAppStore } from "../store/app";
 import { useInterviewStore } from "../store/interview";
 
@@ -105,17 +123,23 @@ const { apiBase } = storeToRefs(appStore);
 const {
   currentInterview,
   activeTurn,
+  mode,
   answerText,
-  transcript,
-  durationSeconds,
+  canSubmitAnswer,
   lastEvaluation,
   submittingAnswer,
+  loadingReport,
   completingInterview
 } = storeToRefs(interviewStore);
 
-async function refreshInterview() {
-  await interviewStore.refreshInterviewAction(apiBase.value);
-}
+const isGeneratingReport = computed(() => completingInterview.value || loadingReport.value);
+
+const pendingIndicatorLabel = computed(() => {
+  if (isGeneratingReport.value) {
+    return "正在生成面试报告...";
+  }
+  return "AI 正在评估回答...";
+});
 
 async function submitAnswer() {
   await interviewStore.submitAnswerAction(apiBase.value);

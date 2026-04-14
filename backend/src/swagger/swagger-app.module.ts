@@ -47,6 +47,25 @@ const audioServiceStub = {
       clarityScore: 0,
       flags: []
     }
+  }),
+  transcribeAudioFile: async () => ({
+    transcript: "",
+    normalizedTranscript: "",
+    wordCount: 0,
+    metrics: {
+      durationSeconds: null,
+      fillerWordCount: 0,
+      averageConfidence: null,
+      averagePauseMs: null,
+      paceWpm: null,
+      fillerRate: 0,
+      clarityScore: 0,
+      flags: []
+    },
+    language: "zh",
+    sttProvider: "openai",
+    sttModel: "gpt-4o-mini-transcribe",
+    segments: []
   })
 } as unknown as AudioService;
 

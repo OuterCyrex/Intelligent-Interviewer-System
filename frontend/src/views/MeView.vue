@@ -110,9 +110,6 @@
       <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div class="mb-3 flex items-center justify-between">
           <h3 class="text-base font-semibold">活跃热力图</h3>
-          <button class="rounded-lg border border-slate-300 px-3 py-1 text-xs hover:border-slate-400 dark:border-slate-700" :disabled="loadingReports" @click="refreshReportsData">
-            {{ loadingReports ? "加载中..." : "刷新" }}
-          </button>
         </div>
         <div class="overflow-x-auto">
           <div class="inline-flex w-max items-start gap-0.5">

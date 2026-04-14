@@ -1,6 +1,24 @@
 ﻿export type Difficulty = "junior" | "intermediate" | "senior";
 export type InterviewMode = "text" | "speech";
 
+export interface SpeechMetrics {
+  durationSeconds: number | null;
+  fillerWordCount: number;
+  averageConfidence: number | null;
+  averagePauseMs: number | null;
+  paceWpm: number | null;
+  fillerRate: number;
+  clarityScore: number;
+  flags: string[];
+}
+
+export interface SpeechTranscriptionSegment {
+  startSeconds: number | null;
+  endSeconds: number | null;
+  text: string;
+  confidence: number | null;
+}
+
 export interface Position {
   id: string;
   slug: string;
@@ -32,16 +50,19 @@ export interface InterviewTurn {
   sequence?: number;
   prompt?: string;
   answerText?: string | null;
+  transcript?: string | null;
   answeredAt?: string | null;
   evaluationSummary?: string;
-  overallScore?: number;
+  overallScore?: number | null;
   evaluationSource?: "heuristic" | "llm";
+  audioMetrics?: SpeechMetrics | null;
 }
 
 export interface InterviewView {
   id: string;
-  positionId?: string;
   candidateName: string;
+  mode?: InterviewMode;
+  positionId?: string;
   status: "in_progress" | "completed";
   completedAt?: string | null;
   position?: {
@@ -92,4 +113,3 @@ export interface Overview {
   averageOverallScore: number | null;
   focusAreas: string[];
 }
-

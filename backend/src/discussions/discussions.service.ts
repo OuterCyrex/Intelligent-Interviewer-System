@@ -47,6 +47,27 @@ export class DiscussionsService {
     }
 
     const [items, total] = await query.getManyAndCount();
+    const replyCountMap = await this.loadReplyCountMap(items.map((item) => item.id));
+
+    const mismatched: Array<{ id: string; replyCount: number }> = [];
+    for (const item of items) {
+      const actualReplyCount = replyCountMap.get(item.id) ?? 0;
+      if (item.replyCount !== actualReplyCount) {
+        mismatched.push({ id: item.id, replyCount: actualReplyCount });
+      }
+      item.replyCount = actualReplyCount;
+    }
+
+    if (mismatched.length > 0) {
+      await Promise.all(
+        mismatched.map((item) =>
+          this.discussionsRepository.update(
+            { id: item.id },
+            { replyCount: item.replyCount }
+          )
+        )
+      );
+    }
 
     return {
       items,
@@ -114,7 +135,7 @@ export class DiscussionsService {
     });
 
     const savedReply = await this.discussionRepliesRepository.save(entity);
-    await this.discussionsRepository.increment({ id: discussion.id }, "replyCount", 1);
+    await this.syncDiscussionReplyCount(discussion.id);
 
     return savedReply;
   }
@@ -141,5 +162,36 @@ export class DiscussionsService {
       return 6;
     }
     return Math.min(20, Math.floor(value));
+  }
+
+  private async loadReplyCountMap(discussionIds: string[]) {
+    if (discussionIds.length === 0) {
+      return new Map<string, number>();
+    }
+
+    const rows = await this.discussionRepliesRepository
+      .createQueryBuilder("reply")
+      .select("reply.discussion_id", "discussionId")
+      .addSelect("COUNT(reply.id)::int", "replyCount")
+      .where("reply.discussion_id IN (:...discussionIds)", { discussionIds })
+      .groupBy("reply.discussion_id")
+      .getRawMany<{ discussionId: string; replyCount: string | number }>();
+
+    const map = new Map<string, number>();
+    for (const row of rows) {
+      map.set(row.discussionId, Number(row.replyCount) || 0);
+    }
+
+    return map;
+  }
+
+  private async syncDiscussionReplyCount(discussionId: string) {
+    const replyCount = await this.discussionRepliesRepository.count({
+      where: { discussionId }
+    });
+    await this.discussionsRepository.update(
+      { id: discussionId },
+      { replyCount }
+    );
   }
 }

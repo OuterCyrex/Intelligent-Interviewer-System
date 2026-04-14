@@ -7,9 +7,6 @@
           <p class="text-sm text-slate-500 dark:text-slate-400">查看当前会话的评分、总结与后续建议</p>
         </div>
         <div class="flex flex-wrap gap-2" v-if="currentInterview">
-          <button class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:border-slate-400 dark:border-slate-700" :disabled="loadingReport" @click="loadReport">
-            {{ loadingReport ? "加载报告..." : "刷新报告" }}
-          </button>
           <button class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:border-slate-400 dark:border-slate-700" :disabled="loadingRecommendations" @click="loadRecommendations">
             {{ loadingRecommendations ? "加载推荐..." : "获取推荐" }}
           </button>
@@ -138,10 +135,6 @@ const {
   loadingRecommendations,
   loadingOverview
 } = storeToRefs(interviewStore);
-
-async function loadReport() {
-  await interviewStore.loadReportAction(apiBase.value);
-}
 
 async function loadRecommendations() {
   await interviewStore.loadRecommendationsAction(apiBase.value);
