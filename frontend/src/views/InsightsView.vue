@@ -41,28 +41,36 @@
       </article>
     </section>
 
-    <article v-if="report" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <h3 class="text-base font-semibold">报告总结</h3>
+    <article v-if="report" class="py-1">
+      <div class="flex items-center gap-2">
+        <h3 class="text-base font-semibold">报告总结</h3>
+        <span class="rounded-full border px-2 py-0.5 text-xs"
+          :class="report.generationSource === 'llm'
+            ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300'
+            : 'border-slate-300 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'">
+          {{ report.generationSource === "llm" ? "AI生成" : "启发式生成" }}
+        </span>
+      </div>
       <p class="mt-2 leading-7 text-slate-700 dark:text-slate-300">{{ report.summary }}</p>
     </article>
 
-    <section v-if="report" class="grid gap-4 md:grid-cols-3">
+    <section v-if="report" class="space-y-4">
       <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <h3 class="mb-2 font-semibold">优势</h3>
-        <ul class="space-y-1 text-sm text-slate-700 dark:text-slate-300">
-          <li v-for="item in report.strengths" :key="item">- {{ item }}</li>
+        <ul class="list-disc space-y-1 pl-5 text-sm text-slate-700 marker:text-slate-400 dark:text-slate-300 dark:marker:text-slate-500">
+          <li v-for="item in report.strengths" :key="item">{{ item }}</li>
         </ul>
       </article>
       <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <h3 class="mb-2 font-semibold">改进点</h3>
-        <ul class="space-y-1 text-sm text-slate-700 dark:text-slate-300">
-          <li v-for="item in report.improvementAreas" :key="item">- {{ item }}</li>
+        <ul class="list-disc space-y-1 pl-5 text-sm text-slate-700 marker:text-slate-400 dark:text-slate-300 dark:marker:text-slate-500">
+          <li v-for="item in report.improvementAreas" :key="item">{{ item }}</li>
         </ul>
       </article>
       <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <h3 class="mb-2 font-semibold">下一步</h3>
-        <ul class="space-y-1 text-sm text-slate-700 dark:text-slate-300">
-          <li v-for="item in report.nextSteps" :key="item">- {{ item }}</li>
+        <ul class="list-disc space-y-1 pl-5 text-sm text-slate-700 marker:text-slate-400 dark:text-slate-300 dark:marker:text-slate-500">
+          <li v-for="item in report.nextSteps" :key="item">{{ item }}</li>
         </ul>
       </article>
     </section>
@@ -104,7 +112,7 @@
         <ul class="space-y-2 text-sm">
           <li v-for="item in recommendations.practiceQuestions" :key="item.id" class="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950">
             <p class="font-medium">{{ item.topic }}</p>
-            <p class="mt-1 text-slate-600 dark:text-slate-400">{{ item.type }} / {{ item.difficulty }}</p>
+            <p class="mt-1 text-slate-600 dark:text-slate-400">{{ item.type }} / {{ item.difficulty === "junior" ? "初级" : item.difficulty === "intermediate" ? "中级" : "高级" }}</p>
           </li>
         </ul>
       </article>

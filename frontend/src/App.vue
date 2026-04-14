@@ -34,11 +34,13 @@ async function initInterviewContext() {
   if (!authStore.isLoggedIn) {
     return;
   }
+  interviewStore.candidateName = authStore.userName || interviewStore.candidateName;
   await interviewStore.initialize(apiBase.value);
 }
 
 onMounted(async () => {
   applyThemeClass();
+  await authStore.hydrate(apiBase.value);
   await initInterviewContext();
 });
 

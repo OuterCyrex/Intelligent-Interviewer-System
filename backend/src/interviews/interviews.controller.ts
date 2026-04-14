@@ -142,6 +142,8 @@ export class InterviewsController {
         }
       }
 
+
+      send("status", { phase: "completed", message: "评估完成" });
       const nextTurnId = result.interview?.activeTurn?.id || "";
       const fullNextPrompt = result.interview?.activeTurn?.prompt || "";
       if (nextTurnId && fullNextPrompt) {
@@ -152,7 +154,6 @@ export class InterviewsController {
         send("next_prompt_done", { turnId: answerTurnId });
       }
 
-      send("status", { phase: "completed", message: "评估完成" });
       send("done", { ok: true });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

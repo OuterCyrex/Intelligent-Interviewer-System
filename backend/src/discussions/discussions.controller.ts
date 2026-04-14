@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Headers, Inject, Post, Query } from "@nestjs/common";
-import { ApiBody, ApiHeader, ApiOperation, ApiQuery, ApiTags } from "@nestjs/swagger";
+import { Body, Controller, Get, Headers, Inject, Param, Post, Query } from "@nestjs/common";
+import { ApiBody, ApiHeader, ApiOperation, ApiParam, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { CreateDiscussionDto } from "./dto/create-discussion.dto";
+import { CreateDiscussionReplyDto } from "./dto/create-discussion-reply.dto";
 import { DiscussionsService } from "./discussions.service";
 
 @ApiTags("discussions")
@@ -31,5 +32,25 @@ export class DiscussionsController {
   @ApiBody({ type: CreateDiscussionDto })
   create(@Body() dto: CreateDiscussionDto, @Headers("authorization") authorization?: string) {
     return this.discussionsService.create(dto, authorization);
+  }
+
+  @Get(":discussionId/replies")
+  @ApiOperation({ summary: "List replies for a discussion" })
+  @ApiParam({ name: "discussionId", description: "Discussion id" })
+  findReplies(@Param("discussionId") discussionId: string) {
+    return this.discussionsService.findReplies(discussionId);
+  }
+
+  @Post(":discussionId/replies")
+  @ApiOperation({ summary: "Reply to a discussion" })
+  @ApiHeader({ name: "Authorization", description: "Bearer {token}" })
+  @ApiParam({ name: "discussionId", description: "Discussion id" })
+  @ApiBody({ type: CreateDiscussionReplyDto })
+  createReply(
+    @Param("discussionId") discussionId: string,
+    @Body() dto: CreateDiscussionReplyDto,
+    @Headers("authorization") authorization?: string
+  ) {
+    return this.discussionsService.createReply(discussionId, dto, authorization);
   }
 }

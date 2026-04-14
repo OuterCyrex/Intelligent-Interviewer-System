@@ -13,8 +13,8 @@
         <div class="flex w-full flex-col gap-3 lg:w-auto lg:flex-row lg:items-center">
           <nav class="flex flex-wrap items-center gap-2 text-sm">
             <RouterLink to="/home" class="rounded-lg px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800" active-class="bg-slate-200 text-emerald-700 dark:bg-slate-800 dark:text-emerald-300">主页</RouterLink>
-            <RouterLink to="/dashboard" class="rounded-lg px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800" active-class="bg-slate-200 text-emerald-700 dark:bg-slate-800 dark:text-emerald-300">工作台</RouterLink>
-            <RouterLink to="/insights" class="rounded-lg px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800" active-class="bg-slate-200 text-emerald-700 dark:bg-slate-800 dark:text-emerald-300">报告</RouterLink>
+            <RouterLink to="/dashboard" class="rounded-lg px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800" active-class="bg-slate-200 text-emerald-700 dark:bg-slate-800 dark:text-emerald-300">面试</RouterLink>
+            <RouterLink to="/discussions" class="rounded-lg px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800" active-class="bg-slate-200 text-emerald-700 dark:bg-slate-800 dark:text-emerald-300">讨论</RouterLink>
             <RouterLink to="/me" class="rounded-lg px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800" active-class="bg-slate-200 text-emerald-700 dark:bg-slate-800 dark:text-emerald-300">我的</RouterLink>
           </nav>
 
@@ -54,15 +54,18 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
+import { useAppStore } from "../store/app";
 import { useAuthStore } from "../store/auth";
 import { useThemeStore } from "../store/theme";
 
 const router = useRouter();
+const appStore = useAppStore();
 const authStore = useAuthStore();
 const themeStore = useThemeStore();
+const { apiBase } = storeToRefs(appStore);
 
 async function logout() {
-  authStore.logout();
+  await authStore.logout(apiBase.value);
   await router.push("/login");
 }
 </script>

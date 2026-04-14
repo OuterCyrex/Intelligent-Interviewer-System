@@ -18,11 +18,15 @@ export function toQueryString(params: Record<string, string | undefined>) {
 }
 
 export async function requestJson<T>(baseUrl: string, path: string, init?: RequestInit): Promise<T> {
+  const mergedHeaders = {
+    "Content-Type": "application/json",
+    ...(init?.headers ?? {})
+  };
+
   const response = await fetch(`${normalizeBaseUrl(baseUrl)}${path}`, {
-    headers: {
-      "Content-Type": "application/json"
-    },
     ...init
+    ,
+    headers: mergedHeaders
   });
 
   if (!response.ok) {

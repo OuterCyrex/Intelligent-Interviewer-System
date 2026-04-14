@@ -53,7 +53,6 @@ interface SeedDiscussion {
   title: string;
   content: string;
   tag: string;
-  replyCount?: number;
 }
 
 const SEED_POSITIONS: SeedPosition[] = [
@@ -83,10 +82,10 @@ const SEED_QUESTIONS: SeedQuestion[] = [
     topic: "缓存一致性",
     type: "technical",
     difficulty: "intermediate",
-    content: "在高并发系统中，你会如何处理 Redis 与 MySQL 之间的缓存一致性问题？",
-    expectedKeywords: ["缓存失效", "延迟双删", "重试", "数据库一致性", "热点 Key"],
-    followUpHints: ["故障处理", "重试时机", "热点 Key 保护"],
-    evaluationFocus: ["Redis", "MySQL", "系统设计"],
+    content: "在高并发系统中，你会如何处理缓存层与关系型数据库之间的一致性问题？",
+    expectedKeywords: ["缓存失效", "延迟双删", "重试", "数据库一致性", "热点数据"],
+    followUpHints: ["故障处理", "重试时机", "热点数据保护"],
+    evaluationFocus: ["缓存设计", "数据库设计", "系统设计"],
     rubric: "需要给出具体的一致性方案，说明失败路径，并讨论在高流量下的缓解手段。"
   },
   {
@@ -113,6 +112,17 @@ const SEED_QUESTIONS: SeedQuestion[] = [
   },
   {
     positionSlug: "java-backend-engineer",
+    topic: "分布式锁与幂等保障",
+    type: "technical",
+    difficulty: "intermediate",
+    content: "如果你要为秒杀下单或重复回调场景设计并发控制，你会如何同时保证分布式锁的可靠性和接口幂等性？",
+    expectedKeywords: ["幂等", "唯一标识", "锁超时", "重试", "补偿"],
+    followUpHints: ["锁失效后的处理", "幂等键设计", "异常补偿"],
+    evaluationFocus: ["并发控制", "系统设计"],
+    rubric: "重点看是否能区分锁与幂等的职责边界，并解释异常场景下的数据正确性保障。"
+  },
+  {
+    positionSlug: "java-backend-engineer",
     topic: "跨团队沟通",
     type: "behavioral",
     difficulty: "intermediate",
@@ -127,9 +137,9 @@ const SEED_QUESTIONS: SeedQuestion[] = [
     topic: "渲染流水线",
     type: "technical",
     difficulty: "intermediate",
-    content: "请你说明浏览器如何把 HTML、CSS 和 JavaScript 转换成最终屏幕上的像素，以及性能问题通常出现在什么阶段。",
-    expectedKeywords: ["DOM", "CSSOM", "渲染树", "布局", "绘制"],
-    followUpHints: ["重排原因", "JavaScript 的影响", "性能分析"],
+    content: "请你说明浏览器如何把页面结构、样式规则和脚本逻辑转换成最终屏幕上的像素，以及性能问题通常出现在什么阶段。",
+    expectedKeywords: ["文档树", "样式树", "渲染树", "布局", "绘制"],
+    followUpHints: ["重排原因", "脚本执行影响", "性能分析"],
     evaluationFocus: ["浏览器渲染", "性能优化"],
     rubric: "重点考察是否能清晰解释渲染流水线，以及是否了解常见性能瓶颈。"
   },
@@ -157,6 +167,17 @@ const SEED_QUESTIONS: SeedQuestion[] = [
   },
   {
     positionSlug: "web-frontend-engineer",
+    topic: "长列表渲染优化",
+    type: "technical",
+    difficulty: "intermediate",
+    content: "当页面需要一次展示大量列表数据时，你会从渲染、交互和数据加载三个层面如何做优化？",
+    expectedKeywords: ["虚拟列表", "分页加载", "骨架屏", "重绘控制", "交互流畅"],
+    followUpHints: ["首屏策略", "滚动性能", "数据分片"],
+    evaluationFocus: ["性能优化", "工程质量"],
+    rubric: "重点看是否具备分层优化思路，能同时兼顾首屏体验、滚动性能和代码可维护性。"
+  },
+  {
+    positionSlug: "web-frontend-engineer",
     topic: "推动产品范围调整",
     type: "behavioral",
     difficulty: "intermediate",
@@ -165,6 +186,17 @@ const SEED_QUESTIONS: SeedQuestion[] = [
     followUpHints: ["你如何定义问题", "你如何衡量影响"],
     evaluationFocus: ["表达沟通", "岗位匹配度"],
     rubric: "重点看干系人管理、优先级判断，以及最终结果是否和用户价值或团队效率相关。"
+  },
+  {
+    positionSlug: "web-frontend-engineer",
+    topic: "线上异常监控与排障",
+    type: "scenario",
+    difficulty: "intermediate",
+    content: "如果线上前端页面突然出现大量异常上报，但你暂时无法稳定复现，你会如何定位问题并控制影响范围？",
+    expectedKeywords: ["异常监控", "埋点信息", "版本对比", "降级方案", "回滚"],
+    followUpHints: ["如何快速定位用户范围", "如何补充诊断信息", "如何防止再次发生"],
+    evaluationFocus: ["线上排障", "工程质量"],
+    rubric: "重点看是否具备线上问题排查路径、影响面控制意识，以及对监控埋点质量的理解。"
   }
 ];
 
@@ -472,7 +504,7 @@ export class MvpSeedService implements OnApplicationBootstrap {
           authorAccount: user.account,
           authorName: user.userName,
           tag: seedDiscussion.tag,
-          replyCount: seedDiscussion.replyCount ?? 0
+          replyCount: 0
         });
       } else {
         Object.assign(discussion, {
@@ -481,7 +513,7 @@ export class MvpSeedService implements OnApplicationBootstrap {
           authorAccount: user.account,
           authorName: user.userName,
           tag: seedDiscussion.tag,
-          replyCount: seedDiscussion.replyCount ?? discussion.replyCount ?? 0
+          replyCount: 0
         });
       }
 

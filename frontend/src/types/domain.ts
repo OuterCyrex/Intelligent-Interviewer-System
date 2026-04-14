@@ -29,7 +29,10 @@ export interface KnowledgeItem {
 
 export interface InterviewTurn {
   id: string;
+  sequence?: number;
   prompt?: string;
+  answerText?: string | null;
+  answeredAt?: string | null;
   evaluationSummary?: string;
   overallScore?: number;
   evaluationSource?: "heuristic" | "llm";
@@ -37,14 +40,22 @@ export interface InterviewTurn {
 
 export interface InterviewView {
   id: string;
+  positionId?: string;
   candidateName: string;
   status: "in_progress" | "completed";
+  completedAt?: string | null;
+  position?: {
+    id: string;
+    name: string;
+    slug?: string;
+  } | null;
   progress?: {
     answeredBaseQuestions: number;
     targetQuestionCount: number;
     askedTurns: number;
     completed: boolean;
   };
+  turns?: InterviewTurn[];
   activeTurn?: InterviewTurn | null;
 }
 
@@ -58,6 +69,9 @@ export interface Report {
   strengths: string[];
   improvementAreas: string[];
   nextSteps: string[];
+  generationSource?: "heuristic" | "llm";
+  llmProvider?: string | null;
+  llmModel?: string | null;
 }
 
 export interface Recommendations {

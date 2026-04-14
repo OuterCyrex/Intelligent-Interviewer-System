@@ -23,19 +23,7 @@
               to="/dashboard"
               class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-[0_12px_24px_-12px_rgba(15,23,42,0.6)] transition hover:-translate-y-0.5 hover:bg-slate-800 dark:bg-emerald-500 dark:text-slate-950 dark:hover:bg-emerald-400"
             >
-              开始配置训练
-            </RouterLink>
-            <RouterLink
-              to="/dashboard"
-              class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-400 hover:text-emerald-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-emerald-500"
-            >
-              继续当前面试
-            </RouterLink>
-            <RouterLink
-              to="/insights"
-              class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-cyan-400 hover:text-cyan-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-cyan-500"
-            >
-              查看报告中心
+              开始面试
             </RouterLink>
           </div>
         </div>
@@ -73,73 +61,90 @@
       </div>
     </article>
 
-    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <p class="text-xs uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">训练目标</p>
-        <p class="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">
-          {{ currentInterview ? "冲刺本轮面试" : "创建本轮面试计划" }}
-        </p>
-        <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
-          {{ currentInterview ? "继续完成当前题目，保持训练节奏。" : "先定岗位，再拉通题库和知识点。" }}
-        </p>
-      </article>
-
-      <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <p class="text-xs uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">准备度</p>
-        <p class="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">{{ completedRate }}% 已完成</p>
-        <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">建议每天至少完成 1 次模拟和 1 次复盘。</p>
-      </article>
-
-      <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <p class="text-xs uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">内容库存</p>
-        <p class="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">{{ questions.length + knowledge.length }} 条可练习素材</p>
-        <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">题库与知识片段已就绪，可直接进入面试实战。</p>
-      </article>
-
-      <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <p class="text-xs uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">建议动作</p>
-        <div class="mt-2 flex flex-wrap gap-2">
-          <RouterLink
-            to="/dashboard"
-            class="rounded-lg border border-slate-300 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700 transition hover:border-emerald-400 hover:text-emerald-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-emerald-500"
+    <section class="grid gap-5 md:grid-cols-2 xl:grid-cols-2">
+      <article class="rounded-2xl border border-emerald-200 bg-slate-950 p-6 text-white shadow-[0_20px_45px_-35px_rgba(6,78,59,0.9)]">
+        <div class="flex items-center justify-between gap-3">
+          <p class="text-xs uppercase tracking-[0.18em] text-emerald-100/70">今日报告</p>
+          <button
+            class="rounded-lg border border-white/15 bg-white/10 px-3 py-1 text-xs font-medium text-white/90 transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="loadingReportInsights"
+            @click="loadReportInsights"
           >
-            去工作台
-          </RouterLink>
-          <RouterLink
-            to="/insights"
-            class="rounded-lg border border-slate-300 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700 transition hover:border-cyan-400 hover:text-cyan-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-cyan-500"
+            {{ loadingReportInsights ? "刷新中" : "刷新" }}
+          </button>
+        </div>
+
+        <div class="mt-5 flex items-end justify-between gap-4">
+          <div>
+            <p class="text-6xl font-black tracking-tight">{{ todayReportsCount }}</p>
+            <p class="mt-1 text-xs text-emerald-50/65">今日生成报告数</p>
+          </div>
+        </div>
+
+        <div class="mt-6 grid grid-cols-7 gap-2.5">
+          <div
+            v-for="day in recentDailyReportCounts"
+            :key="day.date"
+            class="flex flex-col items-center gap-2"
           >
-            看报告
-          </RouterLink>
+            <div class="flex h-16 items-end">
+              <div
+                class="w-6 rounded-full bg-gradient-to-t from-emerald-400 via-emerald-300 to-cyan-300 shadow-[0_8px_18px_-12px_rgba(103,232,249,0.85)]"
+                :class="day.count <= 0 ? 'opacity-20' : ''"
+                :style="{ height: `${dailyBarHeight(day.count)}px` }"
+              ></div>
+            </div>
+            <div class="text-[10px] text-emerald-50/65">{{ day.label }}</div>
+          </div>
         </div>
       </article>
+
+      <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div class="flex items-center justify-between gap-3">
+          <p class="text-xs uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">热力图</p>
+          <div class="text-right">
+          </div>
+        </div>
+
+        <div class="mt-5 overflow-x-auto">
+          <div class="inline-flex w-max items-start gap-1.5">
+            <div v-for="(week, index) in reportHeatmapWeeks" :key="index" class="grid grid-rows-7 gap-1">
+              <div
+                v-for="day in week"
+                :key="day.date"
+                class="h-5 w-5 rounded-[4px]"
+                :class="heatColorClass(day.count)"
+                :title="`${day.date} · ${day.count} 份报告`"
+              ></div>
+            </div>
+          </div>
+        </div>
+
+      </article>
     </section>
+
+    <p
+      v-if="reportInsightsError"
+      class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-700/60 dark:bg-amber-900/20 dark:text-amber-300"
+    >
+      报告看板暂时没加载成功：{{ reportInsightsError }}
+    </p>
 
     <section class="grid gap-6 lg:grid-cols-12">
       <article class="lg:col-span-8">
         <div class="mb-3 flex items-center justify-between">
           <h3 class="text-lg font-semibold">求职讨论</h3>
-          <RouterLink to="/me" class="text-sm text-emerald-700 hover:underline dark:text-emerald-300">查看我的画像</RouterLink>
         </div>
 
-        <div class="divide-y divide-slate-200 dark:divide-slate-800">
-          <div
-            v-for="topic in discussions"
-            :key="topic.id"
-            class="py-4"
-          >
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <p class="font-medium text-slate-900 dark:text-slate-100">{{ topic.title }}</p>
-              <span class="text-xs text-slate-500 dark:text-slate-400">{{ topic.tag }}</span>
-            </div>
-            <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">{{ topic.summary }}</p>
-            <div class="mt-2 flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
-              <span>作者：{{ topic.author }}</span>
-              <span>回复 {{ topic.replies }}</span>
-              <span>{{ topic.time }}</span>
-            </div>
-          </div>
-        </div>
+        <DiscussionFeed
+          :items="discussions"
+          :loading="loadingDiscussions"
+          :page="discussionsPage"
+          :total-pages="discussionsTotalPages"
+          empty-message="暂无讨论，先发起第一条吧。"
+          @prev-page="goPrevPage"
+          @next-page="goNextPage"
+        />
       </article>
 
       <article class="lg:col-span-4">
@@ -163,7 +168,7 @@
               <div class="mb-2 flex items-center justify-between">
                 <h4 class="font-semibold text-slate-900 dark:text-slate-100">{{ position.name }}</h4>
                 <span class="rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700 dark:border-emerald-700/60 dark:bg-emerald-900/30 dark:text-emerald-300">
-                  {{ position.defaultDifficulty }}
+                  {{ position.defaultDifficulty === "junior" ? "初级" : position.defaultDifficulty === "intermediate" ? "中级" : "高级" }}
                 </span>
               </div>
               <p class="line-clamp-2 text-sm text-slate-600 dark:text-slate-400">{{ position.description }}</p>
@@ -181,14 +186,29 @@
         </div>
       </article>
     </section>
+
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { storeToRefs } from "pinia";
+import { fetchDiscussions, type DiscussionItem } from "../api/discussions";
+import DiscussionFeed from "../components/DiscussionFeed.vue";
+import { fetchReports, type ReportWithInterview } from "../api/reports";
 import { useAppStore } from "../store/app";
 import { useInterviewStore } from "../store/interview";
+
+interface HeatCell {
+  date: string;
+  count: number | null;
+}
+
+interface DailyReportCount {
+  date: string;
+  label: string;
+  count: number;
+}
 
 const appStore = useAppStore();
 const interviewStore = useInterviewStore();
@@ -199,17 +219,15 @@ const {
   knowledge,
   currentInterview
 } = storeToRefs(interviewStore);
-
-const discussions = [
-  { id: 1, title: "前端面试里“项目深挖”到底怎么答才不空？", summary: "大家聊了很多高频追问：指标怎么量化、为什么这么选技术栈、踩坑怎么复盘。", author: "小林", replies: 23, time: "2小时前", tag: "项目面" },
-  { id: 2, title: "Java 后端一面被问缓存一致性，大家都怎么组织答案？", summary: "从双删策略、消息队列异步修正到幂等重试，整理了一套可复用答题模板。", author: "阿哲", replies: 35, time: "4小时前", tag: "技术面" },
-  { id: 3, title: "行为面怎么讲失败经历才不扣分？", summary: "重点不是“失败”本身，而是复盘深度、责任边界和后续改进动作。", author: "Mia", replies: 18, time: "昨天", tag: "行为面" },
-  { id: 4, title: "秋招前两周冲刺计划，有没有可执行版本？", summary: "讨论了每天 1 场模拟 + 1 次复盘 + 1 个薄弱点专项练习的节奏。", author: "Rex", replies: 41, time: "昨天", tag: "备战" },
-  { id: 5, title: "算法岗项目经历少，简历里怎么写更有说服力？", summary: "分享了竞赛、课程项目和开源贡献的表达方式。", author: "Yuki", replies: 27, time: "1天前", tag: "简历" },
-  { id: 6, title: "后端限流和熔断到底怎么讲才不泛泛而谈？", summary: "建议从业务场景、阈值选择、监控指标、演练过程四步展开。", author: "Tom", replies: 16, time: "1天前", tag: "系统设计" },
-  { id: 7, title: "前端性能优化面试，哪些指标最常被追问？", summary: "LCP/FCP/CLS 与埋点口径是重点，同时要会讲优化前后对比。", author: "Ivy", replies: 22, time: "2天前", tag: "性能" },
-  { id: 8, title: "校招二面常见压力问题，有没有应对思路？", summary: "讨论了反问技巧、边界表达和情绪管理。", author: "Neo", replies: 33, time: "2天前", tag: "面试技巧" }
-];
+const discussionsPage = ref(1);
+const discussionsPageSize = ref(6);
+const discussionsTotal = ref(0);
+const discussionsTotalPages = ref(1);
+const loadingDiscussions = ref(false);
+const discussions = ref<Array<DiscussionItem & { time: string }>>([]);
+const loadingReportInsights = ref(false);
+const reportInsightsError = ref("");
+const reports = ref<ReportWithInterview[]>([]);
 
 const greeting = computed(() => {
   const hour = new Date().getHours();
@@ -238,8 +256,273 @@ const statusLabel = computed(() => {
   return currentInterview.value.status === "completed" ? "已完成" : "进行中";
 });
 
+const sortedReports = computed(() =>
+  [...reports.value].sort((a, b) => getReportTimestamp(b) - getReportTimestamp(a))
+);
+
+const reportDayCountMap = computed(() => {
+  const counter = new Map<string, number>();
+  for (const item of sortedReports.value) {
+    const key = getReportDateKey(item);
+    if (!key) {
+      continue;
+    }
+    counter.set(key, (counter.get(key) ?? 0) + 1);
+  }
+  return counter;
+});
+
+const todayReportsCount = computed(() => reportDayCountMap.value.get(toDateKey(new Date())) ?? 0);
+
+const recentMonthActiveDays = computed(() => {
+  let total = 0;
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - 29);
+
+  for (let i = 0; i < 30; i += 1) {
+    const date = new Date(start);
+    date.setDate(start.getDate() + i);
+    if ((reportDayCountMap.value.get(toDateKey(date)) ?? 0) > 0) {
+      total += 1;
+    }
+  }
+
+  return total;
+});
+
+const recentDailyReportCounts = computed<DailyReportCount[]>(() => {
+  const days: DailyReportCount[] = [];
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - 6);
+
+  for (let i = 0; i < 7; i += 1) {
+    const date = new Date(start);
+    date.setDate(start.getDate() + i);
+    const key = toDateKey(date);
+    days.push({
+      date: key,
+      label: `${date.getMonth() + 1}/${date.getDate()}`,
+      count: reportDayCountMap.value.get(key) ?? 0
+    });
+  }
+
+  return days;
+});
+
+const recentDailyMaxCount = computed(() =>
+  Math.max(1, ...recentDailyReportCounts.value.map((item) => item.count))
+);
+
+const averageOverallScore = computed(() => {
+  if (!sortedReports.value.length) {
+    return 0;
+  }
+  return Math.round(
+    sortedReports.value.reduce((sum, item) => sum + item.overallScore, 0) / sortedReports.value.length
+  );
+});
+
+const dimensionAverages = computed(() => {
+  const total = sortedReports.value.length;
+  const average = (getter: (item: ReportWithInterview) => number) => {
+    if (!total) {
+      return 0;
+    }
+    return Math.round(sortedReports.value.reduce((sum, item) => sum + getter(item), 0) / total);
+  };
+
+  return [
+    { key: "technical", label: "技术", score: average((item) => item.technicalScore) },
+    { key: "communication", label: "表达", score: average((item) => item.communicationScore) },
+    { key: "depth", label: "深度", score: average((item) => item.depthScore) },
+    { key: "roleFit", label: "匹配", score: average((item) => item.roleFitScore) }
+  ];
+});
+
+const dimensionScoreMap = computed(() =>
+  dimensionAverages.value.reduce<Record<string, number>>((map, item) => {
+    map[item.key] = item.score;
+    return map;
+  }, {})
+);
+
+const reportRadarAxes = computed(() => {
+  const radius = 68;
+  return dimensionAverages.value.map((item, index, array) => {
+    const angle = -Math.PI / 2 + (index * Math.PI * 2) / array.length;
+    const x = Math.cos(angle) * radius;
+    const y = Math.sin(angle) * radius;
+    const labelX = Math.cos(angle) * (radius + 18);
+    const labelY = Math.sin(angle) * (radius + 18);
+    return { ...item, angle, x, y, labelX, labelY };
+  });
+});
+
+const reportRadarValuePoints = computed(() =>
+  reportRadarAxes.value
+    .map((axis) => {
+      const ratio = Math.max(0, Math.min(100, dimensionScoreMap.value[axis.key] ?? 0)) / 100;
+      const x = Math.cos(axis.angle) * 68 * ratio;
+      const y = Math.sin(axis.angle) * 68 * ratio;
+      return `${x},${y}`;
+    })
+    .join(" ")
+);
+
+const reportHeatmapWeeks = computed(() => {
+  const cells: HeatCell[] = [];
+  const totalDays = 10 * 7;
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - (totalDays - 1));
+
+  for (let i = 0; i < totalDays; i += 1) {
+    const date = new Date(start);
+    date.setDate(start.getDate() + i);
+    const key = toDateKey(date);
+    cells.push({
+      date: key,
+      count: reportDayCountMap.value.get(key) ?? 0
+    });
+  }
+
+  const weeks: HeatCell[][] = [];
+  for (let i = 0; i < cells.length; i += 7) {
+    weeks.push(cells.slice(i, i + 7));
+  }
+  return weeks;
+});
+
 async function refreshData() {
   await interviewStore.loadPositionsAction(apiBase.value);
   await interviewStore.loadPositionAssetsAction(apiBase.value);
 }
+
+async function loadReportInsights() {
+  loadingReportInsights.value = true;
+  reportInsightsError.value = "";
+
+  try {
+    reports.value = await fetchReports(apiBase.value);
+  } catch (error) {
+    reports.value = [];
+    reportInsightsError.value = error instanceof Error ? error.message : String(error);
+  } finally {
+    loadingReportInsights.value = false;
+  }
+}
+
+async function loadDiscussions(page = discussionsPage.value) {
+  loadingDiscussions.value = true;
+  try {
+    const result = await fetchDiscussions(apiBase.value, page, discussionsPageSize.value);
+    discussionsPage.value = result.page;
+    discussionsTotal.value = result.total;
+    discussionsTotalPages.value = result.totalPages;
+    discussions.value = result.items.map((item) => ({
+      ...item,
+      time: formatTimeAgo(item.createdAt)
+    }));
+  } finally {
+    loadingDiscussions.value = false;
+  }
+}
+
+async function goPrevPage() {
+  if (discussionsPage.value <= 1) {
+    return;
+  }
+  await loadDiscussions(discussionsPage.value - 1);
+}
+
+async function goNextPage() {
+  if (discussionsPage.value >= discussionsTotalPages.value) {
+    return;
+  }
+  await loadDiscussions(discussionsPage.value + 1);
+}
+
+function dailyBarHeight(count: number) {
+  if (count <= 0) {
+    return 10;
+  }
+  return 10 + Math.round((count / recentDailyMaxCount.value) * 46);
+}
+
+function reportRadarGridPoints(percent: number) {
+  const radius = 68 * (percent / 100);
+  return reportRadarAxes.value
+    .map((axis) => `${Math.cos(axis.angle) * radius},${Math.sin(axis.angle) * radius}`)
+    .join(" ");
+}
+
+function heatColorClass(count: number | null) {
+  if (count === null) {
+    return "bg-transparent";
+  }
+  if (count <= 0) {
+    return "bg-slate-200 dark:bg-slate-700";
+  }
+  if (count === 1) {
+    return "bg-emerald-200 dark:bg-emerald-800";
+  }
+  if (count === 2) {
+    return "bg-emerald-400 dark:bg-emerald-600";
+  }
+  return "bg-emerald-600 dark:bg-emerald-400";
+}
+
+function getReportTimestamp(item: ReportWithInterview) {
+  const raw = item.createdAt || item.interview?.completedAt || "";
+  const time = new Date(raw).getTime();
+  return Number.isNaN(time) ? 0 : time;
+}
+
+function getReportDateKey(item: ReportWithInterview) {
+  return toLocalDateKey(item.createdAt || item.interview?.completedAt || "");
+}
+
+function toDateKey(date: Date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function toLocalDateKey(input: string) {
+  if (!input) {
+    return "";
+  }
+  const date = new Date(input);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  return toDateKey(date);
+}
+
+function formatTimeAgo(isoTime: string) {
+  const time = new Date(isoTime);
+  const now = Date.now();
+  const diff = Math.max(0, now - time.getTime());
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+
+  if (diff < hour) {
+    return `${Math.max(1, Math.floor(diff / minute))}分钟前`;
+  }
+  if (diff < day) {
+    return `${Math.floor(diff / hour)}小时前`;
+  }
+  return `${Math.floor(diff / day)}天前`;
+}
+
+onMounted(async () => {
+  await Promise.all([
+    loadDiscussions(1),
+    loadReportInsights()
+  ]);
+});
 </script>

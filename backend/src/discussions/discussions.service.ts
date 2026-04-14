@@ -1,7 +1,9 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Brackets, Repository } from "typeorm";
 import { CreateDiscussionDto } from "./dto/create-discussion.dto";
+import { CreateDiscussionReplyDto } from "./dto/create-discussion-reply.dto";
+import { DiscussionReply } from "./discussion-reply.entity";
 import { Discussion } from "./discussion.entity";
 import { UsersService } from "../users/users.service";
 
@@ -16,6 +18,8 @@ export class DiscussionsService {
   constructor(
     @InjectRepository(Discussion)
     private readonly discussionsRepository: Repository<Discussion>,
+    @InjectRepository(DiscussionReply)
+    private readonly discussionRepliesRepository: Repository<DiscussionReply>,
     private readonly usersService: UsersService
   ) {}
 
@@ -81,6 +85,46 @@ export class DiscussionsService {
     });
 
     return this.discussionsRepository.save(entity);
+  }
+
+  async findReplies(discussionId: string) {
+    await this.ensureDiscussionExists(discussionId);
+
+    return this.discussionRepliesRepository.find({
+      where: { discussionId },
+      order: { createdAt: "ASC" }
+    });
+  }
+
+  async createReply(discussionId: string, dto: CreateDiscussionReplyDto, authorization?: string) {
+    const discussion = await this.ensureDiscussionExists(discussionId);
+    const content = dto.content?.trim() ?? "";
+    const user = await this.usersService.getCurrentUser(authorization);
+
+    if (!content) {
+      throw new BadRequestException("content is required.");
+    }
+
+    const entity = this.discussionRepliesRepository.create({
+      discussionId: discussion.id,
+      content,
+      userId: user.id,
+      authorAccount: user.account,
+      authorName: user.userName
+    });
+
+    const savedReply = await this.discussionRepliesRepository.save(entity);
+    await this.discussionsRepository.increment({ id: discussion.id }, "replyCount", 1);
+
+    return savedReply;
+  }
+
+  private async ensureDiscussionExists(discussionId: string) {
+    const discussion = await this.discussionsRepository.findOneBy({ id: discussionId });
+    if (!discussion) {
+      throw new NotFoundException("Discussion not found.");
+    }
+    return discussion;
   }
 
   private normalizePage(page: number | undefined) {

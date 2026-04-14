@@ -188,7 +188,9 @@ const discussionsServiceStub = {
     total: 0,
     totalPages: 1
   }),
-  create: async () => ({})
+  create: async () => ({}),
+  findReplies: async () => [],
+  createReply: async () => ({})
 } as unknown as DiscussionsService;
 
 @Module({
