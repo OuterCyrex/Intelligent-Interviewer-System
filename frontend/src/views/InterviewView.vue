@@ -42,33 +42,15 @@
             v-model="answerText"
             rows="6"
             class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-amber-400"
-            placeholder="输入你的回答"
+            :placeholder="mode === 'speech' ? '转写完成后会自动回填到这里，你也可以继续补充和修正。' : '输入你的回答'"
           />
         </div>
 
-        <div class="grid gap-2 sm:grid-cols-2">
-          <div>
-            <label class="mb-1 block text-sm text-slate-300">转写文本（可选）</label>
-            <input
-              v-model="transcript"
-              type="text"
-              class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-amber-400"
-            />
-          </div>
-          <div>
-            <label class="mb-1 block text-sm text-slate-300">语音时长秒数（可选）</label>
-            <input
-              v-model.number="durationSeconds"
-              type="number"
-              min="1"
-              class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-amber-400"
-            />
-          </div>
-        </div>
+        <SpeechAnswerPanel v-if="mode === 'speech'" />
 
         <button
           class="w-full rounded-lg bg-amber-500 px-4 py-2 font-semibold text-slate-950 hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
-          :disabled="submittingAnswer || !activeTurn || !answerText.trim()"
+          :disabled="submittingAnswer || !activeTurn || !canSubmitAnswer"
           @click="submitAnswer"
         >
           {{ submittingAnswer ? "提交中..." : "提交回答" }}
@@ -95,6 +77,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
+import SpeechAnswerPanel from "../components/SpeechAnswerPanel.vue";
 import { useAppStore } from "../store/app";
 import { useInterviewStore } from "../store/interview";
 
@@ -105,9 +88,9 @@ const { apiBase } = storeToRefs(appStore);
 const {
   currentInterview,
   activeTurn,
+  mode,
   answerText,
-  transcript,
-  durationSeconds,
+  canSubmitAnswer,
   lastEvaluation,
   submittingAnswer,
   completingInterview

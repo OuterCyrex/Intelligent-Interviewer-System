@@ -112,19 +112,16 @@
               v-model="answerText"
               rows="3"
               class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-950"
-              placeholder="输入回答，提交后会作为聊天消息显示"
+              :placeholder="mode === 'speech' ? '转写完成后会自动回填到这里，你可以继续编辑后再发送。' : '输入回答，提交后会作为聊天消息显示'"
             />
-            <div class="grid gap-2 sm:grid-cols-3">
-              <input v-model="transcript" type="text" placeholder="转写文本（可选）" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-950" />
-              <input v-model.number="durationSeconds" type="number" min="1" placeholder="语音时长秒数" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-950" />
-              <button
-                class="rounded-lg bg-emerald-500 px-4 py-2 font-semibold text-white hover:bg-emerald-600 disabled:opacity-50 dark:text-slate-950 dark:hover:bg-emerald-400"
-                :disabled="submittingAnswer || !activeTurn || !answerText.trim()"
-                @click="submitAnswer"
-              >
-                {{ submittingAnswer ? '发送中...' : '发送回答' }}
-              </button>
-            </div>
+            <SpeechAnswerPanel v-if="mode === 'speech'" />
+            <button
+              class="w-full rounded-lg bg-emerald-500 px-4 py-2 font-semibold text-white hover:bg-emerald-600 disabled:opacity-50 dark:text-slate-950 dark:hover:bg-emerald-400"
+              :disabled="submittingAnswer || !activeTurn || !canSubmitAnswer"
+              @click="submitAnswer"
+            >
+              {{ submittingAnswer ? '发送中...' : '发送回答' }}
+            </button>
           </div>
         </footer>
       </main>
@@ -135,6 +132,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { storeToRefs } from "pinia";
+import SpeechAnswerPanel from "../components/SpeechAnswerPanel.vue";
 import { useAppStore } from "../store/app";
 import { useInterviewStore } from "../store/interview";
 
@@ -157,15 +155,13 @@ const {
   currentInterview,
   activeTurn,
   answerText,
-  transcript,
-  durationSeconds,
+  canSubmitAnswer,
   submittingAnswer,
   completingInterview
 } = storeToRefs(interviewStore);
 
 const conversationTurns = computed(() => {
-  const turns = ((currentInterview.value as unknown as { turns?: Array<Record<string, unknown>> })?.turns ?? []) as Array<Record<string, unknown>>;
-  return turns.sort((a, b) => Number(a.sequence ?? 0) - Number(b.sequence ?? 0));
+  return [...(currentInterview.value?.turns ?? [])].sort((left, right) => Number(left.sequence ?? 0) - Number(right.sequence ?? 0));
 });
 
 async function refreshAll() {
