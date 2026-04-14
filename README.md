@@ -90,6 +90,31 @@ Local run examples:
 
 LLM status can be checked through `GET /llm/status`.
 
+## Speech-to-Text Configuration
+
+The backend now supports a two-step speech interview flow:
+
+1. Upload an audio answer to `POST /audio/transcriptions/file`
+2. Submit the returned `transcript` and `speechMetrics` to `POST /interviews/:id/answers`
+
+Recommended STT variables:
+
+- `STT_ENABLED=true`
+- `OPENAI_STT_API_KEY=...`
+- `OPENAI_STT_BASE_URL=https://api.openai.com/v1`
+- `OPENAI_STT_MODEL=gpt-4o-mini-transcribe`
+- `OPENAI_STT_LANGUAGE=zh`
+- `OPENAI_STT_RESPONSE_FORMAT=verbose_json`
+
+If `OPENAI_STT_API_KEY` is empty, the backend will fall back to `OPENAI_API_KEY`.
+
+The upload endpoint is designed for the current MVP's non-realtime flow. It returns:
+
+- transcript text
+- normalized transcript
+- speech metrics such as duration, pause estimate, filler count, and confidence
+- raw STT segments for debugging or UI subtitle preview
+
 Modeling guidance:
 
 - Use PostgreSQL relational tables for the core business data such as positions, questions, interviews, turns, and reports.
