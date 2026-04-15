@@ -3,7 +3,22 @@
     <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800/70 dark:bg-[#0b1220]/95">
       <div class="flex w-full items-center justify-between gap-4 px-3 py-4 lg:px-6">
         <div class="flex items-center gap-3">
-          <div class="h-9 w-9 rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-400"></div>
+          <div class="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-400 text-white shadow-sm">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              class="h-5 w-5"
+              aria-hidden="true"
+            >
+              <rect x="3" y="4" width="18" height="14" rx="2"></rect>
+              <path d="M8 20h8"></path>
+              <path d="M9 9h6"></path>
+              <path d="M9 13h4"></path>
+            </svg>
+          </div>
           <div>
             <p class="text-[11px] uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-300">AI Interview Coach</p>
             <h1 class="text-xl font-semibold">AI模拟面试与能力提升软件</h1>

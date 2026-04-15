@@ -8,7 +8,9 @@
     "start": "node dist/main.js",
     "start:stable": "npm run build && node dist/main.js",
     "rag:kb": "tsx scripts/rag-kb-builder.ts",
-    "rag:kb:dry": "tsx scripts/rag-kb-builder.ts --dry-run"
+    "rag:kb:dry": "tsx scripts/rag-kb-builder.ts --dry-run",
+    "questions:seed": "tsx scripts/seed-question-bank.ts",
+    "questions:seed:dry": "tsx scripts/seed-question-bank.ts --dry-run"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.11",
