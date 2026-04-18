@@ -6,7 +6,7 @@
     <div class="relative flex min-h-screen">
       <section class="flex-1 px-6 py-12 lg:px-12 xl:px-20">
         <div class="mx-auto flex h-full w-full max-w-4xl flex-col justify-center">
-          <p class="text-xs uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-300">Intervene Interview Coach</p>
+          <p class="text-xs uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-300">AI Interview Coach</p>
           <h1 class="mt-4 text-4xl font-bold leading-tight md:text-5xl">
             像刷题一样刷面试，
             <span class="text-emerald-600 dark:text-emerald-300">但每一步都对齐真实岗位</span>
@@ -20,7 +20,7 @@
       <aside class="w-full border-l border-slate-200 bg-white/95 px-6 py-10 shadow-xl dark:border-slate-800 dark:bg-slate-900/90 sm:max-w-md lg:max-w-lg lg:px-10">
         <div class="mx-auto flex h-full max-w-md flex-col justify-center">
           <div class="mb-6 flex items-center justify-between">
-            <h2 class="text-2xl font-semibold">{{ isRegisterMode ? "注册账号" : "登录平台" }}</h2>
+            <h2 class="text-2xl font-semibold">{{ isRegisterMode ? "注册账号" : "登录" }}</h2>
             <button
               class="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-600 transition hover:bg-emerald-500/20 dark:text-emerald-300"
               @click="toggleMode"

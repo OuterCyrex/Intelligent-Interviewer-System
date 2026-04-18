@@ -15,7 +15,7 @@
             {{ greeting }}，今天继续把面试胜率拉高
           </h2>
           <p class="mt-3 max-w-2xl text-slate-600 dark:text-slate-300">
-            主页已按岗位导向重构：先选赛道，再做面试实战，最后看报告改进。全流程像刷题一样高频，像求职一样真实。
+            全流程像刷题一样高频，像求职一样真实。
           </p>
 
           <div class="mt-6 flex flex-wrap gap-3">

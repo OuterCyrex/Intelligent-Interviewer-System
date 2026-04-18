@@ -52,7 +52,7 @@
           <p class="mt-1 text-3xl font-bold text-cyan-600 dark:text-cyan-300">{{ stats.avgScore }}</p>
         </div>
         <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <p class="text-xs text-slate-500 dark:text-slate-400">最近最好分</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400">最高分</p>
           <p class="mt-1 text-3xl font-bold text-amber-600 dark:text-amber-300">{{ stats.bestScore }}</p>
         </div>
         <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
